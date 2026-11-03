@@ -19,7 +19,7 @@ class ExportNamingTest {
     /** Fixed local timestamp so the formatted stamp is deterministic. */
     private fun createdAt(): Long = Calendar.getInstance(TimeZone.getDefault(), Locale.US).apply {
         clear()
-        set(2026, Calendar.AUGUST, 3, 13, 16, 0)
+        set(2026, Calendar.AUGUST, 3, 13, 16, 42)
     }.timeInMillis
 
     private fun rec(name: String? = null, id: String? = null, rowId: Long = 7) = Recording(
@@ -35,7 +35,7 @@ class ExportNamingTest {
     @Test
     fun `word boundaries survive as hyphens`() {
         val base = ExportNaming.baseName(rec(name = "r layna auster"))
-        assertEquals("StethoScope_Heart_R-Layna-Auster_2026-08-03_1316", base)
+        assertEquals("StethoScope_Heart_R-Layna-Auster_2026-08-03_13-16-42", base)
     }
 
     @Test
@@ -84,6 +84,6 @@ class ExportNamingTest {
         val base = ExportNaming.baseName(rec(name = "Ama Osei"))
         assertTrue(base.startsWith("StethoScope_Heart_"))
         assertTrue(base.contains("2026-08-03"))
-        assertTrue(base.endsWith("1316"))
+        assertTrue(base.endsWith("13-16-42"))
     }
 }

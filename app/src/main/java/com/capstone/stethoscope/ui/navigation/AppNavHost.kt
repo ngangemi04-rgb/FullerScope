@@ -29,9 +29,8 @@ fun AppNavHost() {
             SplashScreen(
                 onFinished = {
                     // Dropped from the back stack so Back from Listen exits instead of
-                    // replaying the startup screen. First launch goes through the tutorial.
-                    val next = if (app.container.settings.tutorialSeen) Routes.LISTEN else Routes.TUTORIAL
-                    navController.navigate(next) {
+                    // replaying the startup screen. The tutorial only opens on request.
+                    navController.navigate(Routes.LISTEN) {
                         popUpTo(Routes.SPLASH) { inclusive = true }
                     }
                 },
@@ -39,19 +38,8 @@ fun AppNavHost() {
         }
 
         composable(Routes.TUTORIAL) {
-            TutorialScreen(
-                onFinished = {
-                    app.container.settings.tutorialSeen = true
-                    // Replayed from Settings: go back there. First launch: on to Listen.
-                    if (navController.previousBackStackEntry != null) {
-                        navController.popBackStack()
-                    } else {
-                        navController.navigate(Routes.LISTEN) {
-                            popUpTo(Routes.TUTORIAL) { inclusive = true }
-                        }
-                    }
-                },
-            )
+            // Opened from the Listen toolbar or Settings; finishing returns there.
+            TutorialScreen(onFinished = { navController.popBackStack() })
         }
 
         composable(Routes.LISTEN) {
@@ -62,6 +50,7 @@ fun AppNavHost() {
                 onOpenLibrary = { navController.navigate(Routes.LIBRARY) },
                 onOpenSettings = { navController.navigate(Routes.SETTINGS) },
                 onOpenTesting = { navController.navigate(Routes.TESTING) },
+                onOpenTutorial = { navController.navigate(Routes.TUTORIAL) },
             )
         }
 

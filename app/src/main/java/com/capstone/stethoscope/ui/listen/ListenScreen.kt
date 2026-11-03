@@ -45,6 +45,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -78,6 +79,7 @@ fun ListenScreen(
     onOpenLibrary: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenTesting: () -> Unit,
+    onOpenTutorial: () -> Unit,
     vm: ListenViewModel = viewModel(factory = ListenViewModel.Factory),
 ) {
     val context = LocalContext.current
@@ -157,6 +159,9 @@ fun ListenScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.listen_title)) },
                 actions = {
+                    TextButton(onClick = onOpenTutorial, enabled = !busy) {
+                        Text(stringResource(R.string.action_tutorial))
+                    }
                     if (testingMode) {
                         IconButton(onClick = onOpenTesting, enabled = !busy) {
                             Icon(

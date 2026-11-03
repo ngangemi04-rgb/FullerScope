@@ -98,13 +98,7 @@ class AppSettings(context: Context) {
 
     enum class InputChannel { LEFT, RIGHT, MIX }
 
-    /** Set once the first-run tutorial has been finished or skipped; it is replayable from Settings. */
-    var tutorialSeen: Boolean
-        get() = prefs.getBoolean(KEY_TUTORIAL_SEEN, false)
-        set(value) = prefs.edit().putBoolean(KEY_TUTORIAL_SEEN, value).apply()
-
     companion object {
-        private const val KEY_TUTORIAL_SEEN = "tutorial_seen"
         private const val KEY_DURATION = "recording_duration_ms"
         private const val KEY_SAMPLE_RATE = "sample_rate"
         private const val KEY_INPUT_CHANNEL = "input_channel"

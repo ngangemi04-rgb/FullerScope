@@ -131,7 +131,8 @@
     <string name="settings_testing_mode_hint">Adds an engineering scope: the phonocardiogram with real time and frequency axes, zoomable, so filter cutoffs can be measured rather than assumed. For bench work, not for patients.</string>
     <string name="settings_testing_open">Open testing mode</string>
     <string name="settings_tutorial">Tutorial</string>
-    <string name="settings_tutorial_open">Show the tutorial again</string>
+    <string name="settings_tutorial_open">Show the tutorial</string>
+    <string name="action_tutorial">Tutorial</string>
 
     <!-- First-run tutorial -->
     <string name="tutorial_skip">Skip</string>

@@ -10,17 +10,17 @@ import java.util.Locale
  *
  * These names matter more than they look: once a file lands in a WhatsApp thread
  * it is identified by its filename alone, so `play_7.wav` is useless to the
- * clinician on the other end. We aim for `StethoScope_KwameMensah_20260727-1432.wav`,
+ * clinician on the other end. We aim for `StethoScope_Heart_Kwame-Mensah_2026-07-27_14-32-05.wav`,
  * falling back to the patient ID and then the recording ID when no name was entered.
  */
 object ExportNaming {
 
-    /** ISO-ish date so files sort chronologically in a folder listing. */
-    private val STAMP = SimpleDateFormat("yyyy-MM-dd_HHmm", Locale.US)
+    /** Date and time to the second: sorts chronologically, and two clips of one patient a minute apart no longer share a name. */
+    private val STAMP = SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.US)
 
     /**
      * Filename stem (no extension) for [recording], e.g.
-     * `StethoScope_Heart_R-Layna-Auster_2026-08-03_1316`.
+     * `StethoScope_Heart_R-Layna-Auster_2026-08-03_13-16-42`.
      */
     fun baseName(recording: Recording): String {
         val who = sanitize(recording.patientName)
