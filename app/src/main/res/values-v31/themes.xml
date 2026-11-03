@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        Android 12 (API 31) replaced the theme-derived starting window with the system
+        SplashScreen API. From 31 onwards `android:windowBackground` is simply ignored for
+        that window, so the values/ version of this theme has no effect there and the
+        launch screen would fall back to the system default — a white-ish window with the
+        app icon, i.e. exactly the flash this is meant to remove.
+
+        Setting the splash background here gets the same result on modern phones. The icon
+        is left at its default, which is already the launcher icon: a white ECG trace on
+        @color/ic_launcher_background, which is the same #00838F teal, so it sits on the
+        splash background without a visible plate around it.
+
+        The test device is Android 10, so this path is the UNVERIFIED one of the two —
+        it needs a look on an Android 12+ phone.
+    -->
+    <style name="Theme.StethoScope.Launch" parent="Theme.StethoScope">
+        <item name="android:windowSplashScreenBackground">@color/teal_500</item>
+    </style>
+</resources>

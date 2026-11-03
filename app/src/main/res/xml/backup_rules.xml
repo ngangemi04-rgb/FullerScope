@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Legacy auto-backup rules (Android 11 and below). -->
+<full-backup-content>
+    <include domain="database" path="stethoscope.db" />
+    <include domain="sharedpref" path="stethoscope_settings.xml" />
+</full-backup-content>

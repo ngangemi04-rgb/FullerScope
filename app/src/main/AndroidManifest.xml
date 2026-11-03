@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Required to capture audio from the built-in mic OR a USB Audio Class stethoscope. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+    <!-- The stethoscope is an RP2040 running MicroPython, which exposes a USB CDC serial
+         port rather than a USB Audio Class device, so raw USB host access is how audio
+         actually reaches the app. Declared non-required so the app still installs on
+         phones without OTG support, where it falls back to the built-in microphone. -->
+    <uses-feature
+        android:name="android.hardware.usb.host"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.microphone"
+        android:required="false" />
+
+    <!-- Package visibility (Android 11+). Without these we cannot see whether
+         WhatsApp is installed, so the "Send via WhatsApp" button would always
+         degrade to the generic share sheet. -->
+    <queries>
+        <package android:name="com.whatsapp" />
+        <package android:name="com.whatsapp.w4b" />
+    </queries>
+
+    <application
+        android:name=".StethoscopeApp"
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:localeConfig="@xml/locales_config"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.StethoScope"
+        tools:targetApi="33">
+
+        <!--
+            singleTop so a stray intent can never stack a second copy of this activity on
+            top of a live one. Two instances means two ListenViewModels, and the one
+            underneath is stopped rather than disposed — so it keeps holding the
+            stethoscope's single-claim CDC interface while the new screen tries to use it.
+        -->
+        <activity
+            android:name=".MainActivity"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|locale|layoutDirection|uiMode"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:launchMode="singleTop"
+            android:theme="@style/Theme.StethoScope.Launch">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!--
+                REMOVED 2026-09-25: the USB_DEVICE_ATTACHED intent filter that offered to
+                open the app when the stethoscope was plugged in.
+
+                It broke firmware upload. Plugging the board in while the app was already
+                running launched a second MainActivity; the first one's composition is
+                never disposed, so a live monitor running on it kept the single-claim CDC
+                interface. The same attach event starts FirmwareManager's check, which then
+                lost the race for that interface and failed with "the stethoscope is busy" —
+                intermittently, depending on what the user happened to have open.
+
+                The filter's only real benefit was that accepting its dialog also granted
+                USB permission, saving one prompt. That prompt still happens, just through
+                UsbStethoscope.requestPermission() on first use — which is actually the
+                better path, because it broadcasts ACTION_USB_PERMISSION when granted and
+                the system dialog does not, so nothing was listening for that grant.
+
+                To restore it, put back:
+                    <intent-filter>
+                        <action android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED" />
+                    </intent-filter>
+                    <meta-data
+                        android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED"
+                        android:resource="@xml/usb_device_filter" />
+                and recreate res/xml/usb_device_filter.xml matching vendor-id 11914
+                (0x2E8A, Raspberry Pi Trading). Keep singleTop above if you do.
+            -->
+        </activity>
+
+        <!-- Lets us share exported WAV/PDF files with other apps securely. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
+    </application>
+
+</manifest>

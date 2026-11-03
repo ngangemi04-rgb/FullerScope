@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Backup / device-transfer rules (Android 12+). -->
+<data-extraction-rules>
+    <cloud-backup>
+        <include domain="database" path="stethoscope.db" />
+        <include domain="sharedpref" path="stethoscope_settings.xml" />
+    </cloud-backup>
+    <device-transfer>
+        <include domain="database" path="stethoscope.db" />
+        <include domain="sharedpref" path="stethoscope_settings.xml" />
+    </device-transfer>
+</data-extraction-rules>

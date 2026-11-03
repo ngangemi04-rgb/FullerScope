@@ -1,0 +1,27 @@
+*.iml
+.gradle/
+/local.properties
+/.idea/
+.DS_Store
+/build/
+/captures/
+.externalNativeBuild/
+.cxx/
+local.properties
+*.apk
+*.aab
+
+# Not for the public repo
+/dist/
+/.kotlin/
+/.claude/
+__pycache__/
+*.wav
+*.wav.enc
+
+# Release signing — the key lives outside the repo; never commit it
+*.jks
+*.keystore
+keystore.properties
+
+build/

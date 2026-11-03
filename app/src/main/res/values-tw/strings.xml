@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    ============================================================================
+    TWI (Asante Twi) — AI-GENERATED BEST-EFFORT TRANSLATIONS.
+    ⚠️  A FLUENT TWI SPEAKER MUST REVIEW EVERY LINE BEFORE CLINICAL USE.
+        The medical terms in particular must be verified. The analysis result
+        strings (heart rate, rhythm, signal quality) are not translated yet and
+        show in English.
+    Any line you delete falls back to English automatically.
+    ============================================================================
+-->
+<resources>
+    <!-- A product name, so it is not translated — only kept in step with the English. -->
+    <string name="app_name">FullerScope</string>
+
+    <!-- Common actions -->
+    <string name="action_back">San kɔ akyi</string>
+    <string name="action_settings">Nhyehyɛeɛ</string>
+    <string name="action_play">Bɔ</string>
+    <string name="action_delete">Pepa</string>
+    <string name="action_retry">Sɔ hwɛ bio</string>
+    <string name="action_done">Awie</string>
+    <string name="action_share">Kyɛ</string>
+    <string name="tab_library">Nkorae</string>
+
+    <!-- Startup screen -->
+    <string name="splash_starting_up">Ɛrefiri aseɛ…</string>
+
+    <!-- Listen screen -->
+    <string name="listen_title">Tie</string>
+    <string name="listen_intro">Fi aseɛ tie na fa stethoscope no si beaeɛ pa, na tie ɔyarefoɔ no akoma ntɛm ara; afei gye.</string>
+    <string name="listen_idle_hint">Miamia "Fi aseɛ Tie" na tie nnyigyeɛ no kane.</string>
+    <string name="listening_active">Retie…</string>
+    <string name="btn_start_listening">Fi aseɛ Tie</string>
+    <string name="btn_stop_listening">Gyae Tie</string>
+
+    <!-- Patient info -->
+    <string name="patient_info">Ɔyarefoɔ ho nsɛm (sɛ wopɛ a)</string>
+    <string name="patient_name">Din</string>
+    <string name="patient_id">Ɔyarefoɔ ID</string>
+    <string name="patient_age">Mfeɛ</string>
+    <string name="patient_sex">Ɔbarima anaa Ɔbaa</string>
+    <string name="patient_notes">Nsɛm foforɔ</string>
+    <string name="sex_male">Ɔbarima</string>
+    <string name="sex_female">Ɔbaa</string>
+    <string name="sex_other">Foforɔ</string>
+
+    <!-- Record screen -->
+    <string name="recording_in_progress">Ɛregye…</string>
+    <string name="saving">Ɛrekora…</string>
+    <string name="btn_record">Gye</string>
+    <string name="btn_stop">Gyae</string>
+    <string name="usb_connected">USB stethoscope akɔ mu</string>
+    <string name="usb_not_connected">USB stethoscope biara nni hɔ — yɛde afidie no ankasa mic na ɛredi dwuma</string>
+
+    <!-- Review screen -->
+    <string name="review_title">Hwɛ deɛ woagye no</string>
+    <string name="review_meta">Berɛ: %1$d s · %2$d Hz</string>
+    <string name="review_playback_hint">Tie bio ansa na woahwɛ mu.</string>
+    <string name="btn_retake">San gye</string>
+    <string name="btn_analyze">Hwɛ mu</string>
+
+    <!-- Result screen -->
+    <string name="result_title">Nhwehwɛmu</string>
+    <string name="analyzing">Ɛrehwɛ mu…</string>
+    <string name="export_report">Yi krataa (PDF)</string>
+    <string name="export_audio">Yi nnyigyeɛ (WAV)</string>
+    <string name="export_success">Wayi no yie</string>
+    <string name="export_failed">Yie no anyɛ yie</string>
+    <string name="send_whatsapp">Fa WhatsApp so mena</string>
+    <string name="whatsapp_missing">WhatsApp nni afidie no so — yɛbɛfa ɔkwan foforɔ so akyɛ.</string>
+    <string name="error_generic">Biribi ankɔ so yie.</string>
+
+    <!-- Library screen -->
+    <string name="library_title">Deɛ woagye</string>
+    <string name="library_empty">Biribiara nni hɔ.</string>
+    <string name="not_analyzed">Wɔnhwɛɛ mu</string>
+
+    <!-- Settings screen -->
+    <string name="settings_title">Nhyehyɛeɛ</string>
+    <string name="settings_language">Kasa</string>
+    <string name="settings_sample_rate">Sample rate</string>
+    <string name="settings_sample_rate_hint">Sɛ rate no korɔn a ɛgye nsɛm pii nanso fael no yɛ kɛseɛ. Fa bisa team no deɛ ɛhia.</string>
+    <string name="settings_input_channel">Ɛkwan a nnyigyeɛ fa so ba</string>
+    <string name="settings_input_channel_hint">Sɛ afidie no de akwan mmienu ba a, deɛ yɛbɛfa. Yɛkora ne nyinaa sɛ mono.</string>
+    <string name="channel_left">Benkum / ch 1</string>
+    <string name="channel_right">Nifa / ch 2</string>
+    <string name="channel_mix">Fra ne mmienu</string>
+    <string name="settings_diagnostics">Afidie no ho nhwehwɛmu</string>
+    <string name="settings_diagnostics_hint">Ɛkyerɛ deɛ telefon no hunu wɔ USB no so. Bue no ɛberɛ a stethoscope no wɔ mu.</string>
+
+    <!--
+        The diagnostics screen itself is intentionally left untranslated: it is a
+        technical dump aimed at the hardware team, not at clinicians, and it falls
+        back to English automatically.
+    -->
+</resources>

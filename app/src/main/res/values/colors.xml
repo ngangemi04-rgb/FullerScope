@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="teal_500">#00838F</color>
+    <color name="teal_700">#005662</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="window_background">#FFF7F9FA</color>
+    <color name="ic_launcher_background">#00838F</color>
+</resources>

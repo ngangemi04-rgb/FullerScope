@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">FullerScope</string>
+
+    <!-- Common actions -->
+    <string name="action_back">Back</string>
+    <string name="action_settings">Settings</string>
+    <string name="action_play">Play</string>
+    <string name="action_stop_playback">Stop playback</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_retry">Retry</string>
+    <string name="action_done">Done</string>
+    <string name="action_share">Share</string>
+    <string name="tab_library">Library</string>
+
+    <!-- Startup screen -->
+    <string name="splash_starting_up">Starting up…</string>
+
+    <!-- Listen screen -->
+    <string name="listen_title">Listen</string>
+    <string name="listen_intro">Start listening to position the stethoscope and hear the patient in real time, then record.</string>
+    <string name="listen_idle_hint">Tap Start Listening to preview the sound.</string>
+    <string name="listening_active">Listening…</string>
+    <string name="btn_start_listening">Start Listening</string>
+    <string name="btn_stop_listening">Stop Listening</string>
+
+    <!-- Patient info -->
+    <string name="patient_info">Patient info (optional)</string>
+    <string name="patient_name">Name</string>
+    <string name="patient_id">Patient ID</string>
+    <string name="patient_age">Age</string>
+    <string name="patient_sex">Sex</string>
+    <string name="patient_notes">Notes</string>
+    <string name="sex_male">Male</string>
+    <string name="sex_female">Female</string>
+    <string name="sex_other">Other</string>
+
+    <!-- Record screen -->
+    <string name="recording_in_progress">Recording…</string>
+    <string name="saving">Saving…</string>
+    <string name="btn_record">Record</string>
+    <string name="btn_stop">Stop</string>
+    <string name="usb_connected">Stethoscope connected and ready</string>
+    <string name="usb_not_connected">No stethoscope detected — will record from the phone\'s microphone</string>
+
+    <!-- Review screen -->
+    <string name="review_title">Review recording</string>
+    <string name="review_meta">Duration: %1$ds · %2$d Hz</string>
+    <string name="review_playback_hint">Listen back before analyzing.</string>
+
+    <!-- Auscultation site, chosen after recording. Part of the patient information. -->
+    <string name="review_site_title">Where did you record from?</string>
+    <string name="review_site_hint">Tap the chest to mark the site. Optional, but the same heart looks different at each position — a report without it cannot be repeated.</string>
+    <string name="review_site_note_label">Location note (optional)</string>
+    <string name="review_site_none">No site chosen</string>
+    <string name="review_site_chosen">Site: %1$s</string>
+    <string name="site_aortic">Aortic</string>
+    <string name="site_pulmonic">Pulmonic</string>
+    <string name="site_erbs">Erb\'s point</string>
+    <string name="site_tricuspid">Tricuspid</string>
+    <string name="site_mitral">Mitral (apex)</string>
+    <string name="site_aortic_detail">2nd intercostal space, right sternal border</string>
+    <string name="site_pulmonic_detail">2nd intercostal space, left sternal border</string>
+    <string name="site_erbs_detail">3rd intercostal space, left sternal border</string>
+    <string name="site_tricuspid_detail">4th intercostal space, lower left sternal border</string>
+    <string name="site_mitral_detail">5th intercostal space, midclavicular line</string>
+    <string name="site_mitral_female_hint">Lies beneath the left breast: gently lift or move the breast aside and place the chest piece directly on the chest wall.</string>
+    <string name="btn_retake">Retake</string>
+    <string name="btn_analyze">Analyze</string>
+
+    <!-- Result screen -->
+    <!-- The word "diagnosis" is deliberately never used on this screen or in the report:
+         the app analyses a recording, it does not diagnose. -->
+    <string name="result_title">Analysis</string>
+    <string name="analyzing">Analyzing recording…</string>
+    <string name="segmented_title">Heart sound segmentation</string>
+    <string name="segmented_hint">Each stretch of the recording is shaded by the phase the algorithm assigned it. Pinch to zoom, drag to scroll once zoomed, tap to read the phase at that moment.</string>
+    <string name="segmented_unavailable">The segmented plot could not be drawn for this recording.</string>
+    <string name="segmented_disclaimer">The algorithm locates S1, systole, S2 and diastole, and screens for a murmur. It looks for that one finding only and does not replace a clinical assessment.</string>
+    <string name="murmur_title">Murmur screen</string>
+    <string name="murmur_detected">Possible murmur detected</string>
+    <string name="murmur_not_detected">No murmur detected</string>
+    <string name="murmur_unable">Unable to analyze</string>
+    <string name="murmur_unable_hint">Too few clear heartbeats to judge. Reposition the stethoscope, keep still, and record again.</string>
+    <string name="murmur_caveat">Development model: in testing on unseen patients it caught 57% of murmurs and cleared 69% of recordings without one. \"No murmur detected\" does not rule a murmur out.</string>
+    <string name="segmented_y_axis">normalised amplitude</string>
+    <string name="phase_s1">S1</string>
+    <string name="phase_systole">Systole</string>
+    <string name="phase_s2">S2</string>
+    <string name="phase_diastole">Diastole</string>
+    <string name="library_segmented">Segmented</string>
+    <!-- Not shown at the moment (segmentation-only mode, 2026-10-23); kept for when the
+         heart rate / rhythm output returns. -->
+    <string name="analysis_heart_rate_label">Heart rate</string>
+    <string name="analysis_heart_rate">%1$d bpm</string>
+    <string name="rhythm_regular">Regular rhythm</string>
+    <string name="rhythm_irregular">Irregular rhythm</string>
+    <string name="rhythm_unknown">Rhythm: too few clear beats to judge</string>
+    <string name="analysis_poor_signal">Signal too weak to analyse</string>
+    <string name="analysis_poor_signal_hint">The heart sounds could not be picked out clearly. Reposition the stethoscope, keep still, and record again.</string>
+    <string name="analysis_beats">%1$d beats detected</string>
+    <string name="analysis_quality">Signal quality: %1$d%%</string>
+    <string name="analysis_disclaimer">Screening aid only. This analysis measures heart rate and rhythm regularity from the heart sounds. It does not detect murmurs or other abnormalities.</string>
+    <string name="library_poor_signal">Poor signal</string>
+    <string name="export_report">Export report (PDF)</string>
+    <string name="export_audio">Export audio (WAV)</string>
+    <string name="export_success">Exported successfully</string>
+    <string name="export_failed">Export failed</string>
+    <string name="send_whatsapp">Send via WhatsApp</string>
+    <string name="whatsapp_missing">WhatsApp isn\'t installed — this opens the normal share sheet instead.</string>
+    <string name="error_generic">Something went wrong.</string>
+
+    <!-- Library screen -->
+    <string name="library_title">Recordings</string>
+    <string name="library_empty">No recordings yet.</string>
+    <string name="not_analyzed">Not analyzed</string>
+
+    <!-- Settings screen -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_sample_rate">Sample rate</string>
+    <string name="settings_sample_rate_hint">Higher rates capture more detail but produce larger files. Confirm the required value with the algorithm team.</string>
+    <string name="settings_input_channel">Input channel</string>
+    <string name="settings_input_channel_hint">Which channel to keep when the stethoscope hardware sends two. Recordings are always saved as mono.</string>
+    <string name="channel_left">Left / ch 1</string>
+    <string name="channel_right">Right / ch 2</string>
+    <string name="channel_mix">Mix both</string>
+    <string name="settings_diagnostics">Hardware diagnostics</string>
+    <string name="settings_diagnostics_hint">Shows exactly what the phone sees on the USB port. Open this with the stethoscope plugged in.</string>
+    <string name="settings_testing_mode">Testing mode</string>
+    <string name="settings_testing_mode_hint">Adds an engineering scope: the phonocardiogram with real time and frequency axes, zoomable, so filter cutoffs can be measured rather than assumed. For bench work, not for patients.</string>
+    <string name="settings_testing_open">Open testing mode</string>
+    <string name="settings_tutorial">Tutorial</string>
+    <string name="settings_tutorial_open">Show the tutorial again</string>
+
+    <!-- First-run tutorial -->
+    <string name="tutorial_skip">Skip</string>
+    <string name="tutorial_next">Next</string>
+    <string name="tutorial_done">Get started</string>
+    <string name="tutorial_connect_title">Connect the stethoscope</string>
+    <string name="tutorial_connect_body">Plug the stethoscope into the phone\'s USB-C port and allow access when Android asks. The status card on the main screen shows when it is ready. Without it, the app records from the phone\'s microphone.</string>
+    <string name="tutorial_listen_title">Listen and position</string>
+    <string name="tutorial_listen_body">Enter the patient\'s details if you have them, then tap Start Listening. Move the stethoscope until the heartbeat shows clearly on the live waveform.</string>
+    <string name="tutorial_record_title">Record</string>
+    <string name="tutorial_record_body">Tap Record and keep the stethoscope still. Recording stops by itself when the time is up, or tap Stop to end early.</string>
+    <string name="tutorial_review_title">Review</string>
+    <string name="tutorial_review_body">Tap the chest diagram to mark where you recorded, and play the clip back. Tap Analyze if it sounds clean, or Retake if not.</string>
+    <string name="tutorial_result_title">Analysis and sharing</string>
+    <string name="tutorial_result_body">The analysis splits each heartbeat into S1, systole, S2 and diastole, and screens for a murmur. Tap Send via WhatsApp to send the report and audio to a doctor. Past recordings are in the Library (folder icon).</string>
+
+    <!-- Testing mode -->
+    <string name="testing_title">Testing mode</string>
+    <string name="testing_intro">Raw capture is exactly what the app hands the algorithm: 16 kHz, unprocessed. PCG (2 kHz) previews the first step of the current placeholder algorithm, which decimates to 2 kHz itself. Pick a stage below, pinch the plots to zoom, tap to measure. Chain response is the one true gain measurement; the analog front end cannot be characterised from a recording.</string>
+    <string name="testing_empty">Capture a few seconds, or load the last recording, to see the traces.</string>
+    <string name="testing_capture">Capture %1$d s</string>
+    <string name="testing_stop_at">Stop (%1$d s)</string>
+    <string name="testing_load_last">Load last recording</string>
+    <string name="testing_capturing">Capturing…</string>
+    <string name="testing_analyzing">Filtering and computing spectra…</string>
+    <string name="testing_requested_rate">Requesting %1$d Hz — the USB stethoscope reports its own rate, the microphone may substitute one.</string>
+    <string name="testing_rate_mismatch">Captured at %1$d Hz, not the %2$d Hz the hardware is specified for. The algorithm receives this rate as-is; the preview decimation still runs correctly, but the ratio is no longer an exact ÷8.</string>
+    <string name="testing_truncated">Showing the first 20 s of a %1$d s recording.</string>
+    <string name="testing_relative_db">dB is relative to the loudest bin in this trace, so compare shapes, not absolute levels. For an actual gain measurement, use the Chain response chip.</string>
+    <string name="testing_response_intro">The one real gain measurement here: the PCG spectrum divided by the raw one, from the same clip, so everything except the resampling cancels out. That resampling now belongs to the placeholder algorithm, not the app — the app itself changes nothing. The dashed line is flat 0 dB and the solid line should sit on it; sag approaching 1 kHz is the anti-alias filter the decimation requires.</string>
+    <string name="testing_response_scope">This measures the placeholder algorithm\'s decimation only. The analog front end and the acoustic coupling cannot be characterised from a recording — that needs a known input signal.</string>
+    <string name="testing_response_unavailable">No response to show: this needs both the raw capture and the decimated output.</string>
+    <string name="testing_voltage_uncalibrated">No voltage to show. These samples came from the phone\'s microphone, which has no defined voltage behind it — only a USB capture from the board can be read in volts, because its (raw − 2048) « 4 conversion is exact.</string>
+    <string name="testing_voltage_scope">Absolute potential at the ADC pin, against the supply rails. The axis is fixed at the full rail on purpose: auto-ranging would make a 40 mV signal fill the plot and look healthy. No pass/fail band is drawn — nobody has measured yet what a real chest produces through this front end.</string>
+    <string name="testing_voltage_clipping">%1$d samples are sitting on a rail. The front end is clipping, and nothing downstream scales the signal back — this reaches the algorithm as a flattened peak.</string>
+    <string name="testing_voltage_bias">Bias is %1$d mV off mid-rail. An off-centre bias loses swing to one rail before the other, so the signal clips earlier than the numbers suggest.</string>
+    <string name="testing_voltage_quiet">Swing is only %1$.1f%% of the rail. The RP2040\'s ADC is worth about 9 effective bits, so a signal this small is being digitised with very few usable levels — raise the preamp gain.</string>
+
+    <!-- Firmware -->
+    <string name="firmware_checking">Checking stethoscope firmware…</string>
+    <string name="firmware_up_to_date">Stethoscope firmware %1$s — up to date</string>
+    <string name="firmware_installing">Updating stethoscope firmware to %1$s — %2$d%%</string>
+    <string name="firmware_installed">Stethoscope firmware updated to %1$s</string>
+    <string name="firmware_reinstall">Upload firmware</string>
+    <string name="firmware_idle_attached">Firmware is not checked automatically. Tap Refresh to read its version, or Upload firmware to install the bundled version.</string>
+    <string name="firmware_outdated">Board firmware is %1$s; this app bundles %2$s. Upload it from Settings → Hardware diagnostics.</string>
+    <string name="firmware_wait">Waiting for the firmware check to finish…</string>
+
+    <!-- Diagnostics screen -->
+    <string name="diagnostics_title">Hardware diagnostics</string>
+    <string name="diagnostics_intro">Plug the stethoscope in, then tap Refresh. Share this report with whoever is building the hardware — it says whether the phone sees a USB audio device, a serial device, or nothing at all.</string>
+    <string name="diagnostics_refresh">Refresh</string>
+    <string name="diagnostics_share">Share report</string>
+    <string name="usb_permission_needed">A stethoscope is connected but Android has not granted this app access to it yet.</string>
+    <string name="usb_permission_grant">Allow USB access</string>
+</resources>

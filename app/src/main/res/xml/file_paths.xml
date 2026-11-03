@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- WAV recordings live under filesDir/recordings. -->
+    <files-path name="recordings" path="recordings/" />
+    <!-- Generated PDF reports live in the cache dir. -->
+    <cache-path name="reports" path="." />
+</paths>
