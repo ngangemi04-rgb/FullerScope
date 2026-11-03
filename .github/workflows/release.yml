@@ -19,12 +19,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "21"
 
-      - uses: android-actions/setup-android@v3
+      # No setup-android step: GitHub's Ubuntu runners ship the Android SDK with
+      # ANDROID_HOME set, and setup-android@v3 now fails asking for the removed
+      # 'tools' package.
 
       - uses: gradle/actions/setup-gradle@v4
 
