@@ -133,6 +133,7 @@
     <string name="settings_tutorial">Tutorial</string>
     <string name="settings_tutorial_open">Show the tutorial</string>
     <string name="action_tutorial">Tutorial</string>
+    <string name="review_playback_failed">This phone could not play the recording (%1$s). It is still saved and can be analyzed.</string>
 
     <!-- First-run tutorial -->
     <string name="tutorial_skip">Skip</string>

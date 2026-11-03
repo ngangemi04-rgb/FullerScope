@@ -36,15 +36,26 @@ class AudioPlayer {
         if (_isPlaying.value) stop() else play(filePath)
     }
 
+    /**
+     * Throws if the phone cannot open the file. setDataSource/prepare fail outright on
+     * some devices' media stacks rather than reporting through the error listener, and
+     * uncaught that took the whole app down; the half-built player is released first so
+     * a retry starts clean.
+     */
     private fun play(filePath: String) {
         stop()
-        player = MediaPlayer().apply {
-            setDataSource(filePath)
-            setOnCompletionListener { stop() }
-            setOnErrorListener { _, _, _ -> stop(); true }
-            prepare()
-            start()
+        val p = MediaPlayer()
+        try {
+            p.setDataSource(filePath)
+            p.setOnCompletionListener { stop() }
+            p.setOnErrorListener { _, _, _ -> stop(); true }
+            p.prepare()
+            p.start()
+        } catch (t: Throwable) {
+            runCatching { p.release() }
+            throw t
         }
+        player = p
         _isPlaying.value = true
         handler.postDelayed(watchdog, WATCHDOG_MS)
     }

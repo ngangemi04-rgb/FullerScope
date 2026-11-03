@@ -48,6 +48,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -69,7 +70,7 @@ import com.capstone.stethoscope.R
 import com.capstone.stethoscope.audio.usb.FirmwareManager
 import com.capstone.stethoscope.audio.usb.UsbStethoscope
 import com.capstone.stethoscope.ui.components.StopWhenBackgrounded
-import com.capstone.stethoscope.ui.components.Waveform
+import com.capstone.stethoscope.ui.components.LivePcgPlot
 import com.capstone.stethoscope.ui.theme.GreenOk
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -84,12 +85,15 @@ fun ListenScreen(
 ) {
     val context = LocalContext.current
     val active by vm.listening.collectAsState()
-    val waveform by vm.waveform.collectAsState()
+    // Kept as a State and read only inside the plot's draw phase, so a new frame
+    // (~30 a second) redraws the graph without recomposing the whole screen.
+    val pcg = vm.pcg.collectAsState()
     val stethoscope by vm.stethoscope.collectAsState()
     val patient by vm.patient.collectAsState()
     val monitorError by vm.error.collectAsState()
     val recordState by vm.recordState.collectAsState()
-    val elapsedMs by vm.elapsedMs.collectAsState()
+    // Updates every capture read; read inside the banner so only the banner recomposes.
+    val elapsedMs = vm.elapsedMs.collectAsState()
     val firmware by vm.firmware.collectAsState()
     val firmwareBusy by vm.firmwareBusy.collectAsState()
     val testingMode by vm.testingMode.collectAsState()
@@ -185,7 +189,7 @@ fun ListenScreen(
             // far down the patient form the clinician has scrolled.
             AnimatedVisibility(visible = busy) {
                 RecordingBar(
-                    elapsedMs = elapsedMs,
+                    elapsedMs = { elapsedMs.value },
                     totalMs = vm.maxDurationMs,
                     saving = saving,
                     onStop = vm::stopRecording,
@@ -233,8 +237,8 @@ fun ListenScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Waveform(
-                        levels = waveform,
+                    LivePcgPlot(
+                        pcg = { pcg.value },
                         color = when {
                             recording -> MaterialTheme.colorScheme.error
                             active -> MaterialTheme.colorScheme.primary
@@ -314,13 +318,17 @@ fun ListenScreen(
  */
 @Composable
 private fun RecordingBar(
-    elapsedMs: Long,
+    elapsedMs: () -> Long,
     totalMs: Long,
     saving: Boolean,
     onStop: () -> Unit,
 ) {
-    val fraction = if (totalMs > 0) (elapsedMs.toFloat() / totalMs).coerceIn(0f, 1f) else 0f
-    val remainingSec = ((totalMs - elapsedMs).coerceAtLeast(0L) / 1000).toInt()
+    // elapsedMs ticks every capture read (~30/s). The countdown only changes once a
+    // second, so derive it; the progress bar reads the time in its own draw phase.
+    // Reading it directly here recomposed the whole bar 30 times a second.
+    val remainingSec by remember(totalMs) {
+        derivedStateOf { ((totalMs - elapsedMs()).coerceAtLeast(0L) / 1000).toInt() }
+    }
 
     Surface(color = MaterialTheme.colorScheme.errorContainer) {
         Column(modifier = Modifier.fillMaxWidth()) {
@@ -361,7 +369,9 @@ private fun RecordingBar(
                 }
             }
             LinearProgressIndicator(
-                progress = { fraction },
+                progress = {
+                    if (totalMs > 0) (elapsedMs().toFloat() / totalMs).coerceIn(0f, 1f) else 0f
+                },
                 modifier = Modifier.fillMaxWidth(),
                 color = MaterialTheme.colorScheme.error,
             )

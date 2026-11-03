@@ -37,9 +37,9 @@ class StethoscopeRecorder(
     private val _amplitude = MutableStateFlow(0f)
     val amplitude: StateFlow<Float> = _amplitude.asStateFlow()
 
-    /** Rolling window of recent amplitudes for the scrolling waveform. */
-    private val waveformWindow = WaveformWindow()
-    val waveform: StateFlow<List<Float>> = waveformWindow.values
+    /** Live PCG trace of the last few seconds, for display only. */
+    private val pcgWindow = LivePcgWindow()
+    val pcg: StateFlow<LivePcg> = pcgWindow.frame
 
     /** True while the real USB stethoscope (not the built-in mic) is in use. */
     private val _usingUsbDevice = MutableStateFlow(false)
@@ -99,7 +99,6 @@ class StethoscopeRecorder(
         stopRequested = false
         _elapsedMs.value = 0L
         _amplitude.value = 0f
-        waveformWindow.clear()
         meter.reset()
 
         val source = sources.create(sampleRate)
@@ -109,6 +108,7 @@ class StethoscopeRecorder(
             source.start()
             val actualRate = source.sampleRate
             _actualSampleRate.value = actualRate
+            pcgWindow.reset(actualRate)
             _usingUsbDevice.value = source.isStethoscope
             _sourceLabel.value = source.label
 
@@ -125,13 +125,10 @@ class StethoscopeRecorder(
                     read > 0 -> {
                         raf.write(buffer, 0, read)
                         monoBytes += read
-                        // Raw peak plus the current auto-range reference: WaveformWindow
-                        // rescales its whole history when the ceiling moves, so the trace
-                        // never carries two scales at once.
-                        val peak = meter.peak(buffer, read)
-                        val fullScale = meter.fullScale
-                        _amplitude.value = (peak / fullScale).coerceIn(0f, 1f)
-                        waveformWindow.push(peak, fullScale)
+                        // The raw bytes are already on disk; the trace's display filter
+                        // works on its own copy and cannot reach the WAV.
+                        _amplitude.value = meter.level(buffer, read)
+                        pcgWindow.push(buffer, read)
                         val elapsed = (monoBytes / bytesPerMs).toLong()
                         _elapsedMs.value = elapsed
                         if (elapsed >= maxDurationMs) break
@@ -173,7 +170,7 @@ class StethoscopeRecorder(
     }
 
     private companion object {
-        /** ~0.25 s of 8 kHz mono audio; large enough to be efficient, small enough to keep the meter responsive. */
-        const val READ_BUFFER_BYTES = 4096
+        /** 32 ms at 16 kHz: one live-trace frame per read, so the graph scrolls smoothly while recording. */
+        const val READ_BUFFER_BYTES = LivePcgWindow.READ_BYTES
     }
 }

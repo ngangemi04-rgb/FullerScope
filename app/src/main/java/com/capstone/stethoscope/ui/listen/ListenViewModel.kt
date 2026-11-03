@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.capstone.stethoscope.StethoscopeApp
+import com.capstone.stethoscope.audio.LivePcg
 import com.capstone.stethoscope.audio.StethoscopeRecorder
 import com.capstone.stethoscope.audio.usb.FirmwareManager
 import com.capstone.stethoscope.audio.usb.UsbStethoscope
@@ -73,11 +74,11 @@ class ListenViewModel(private val container: AppContainer) : ViewModel() {
     val elapsedMs: StateFlow<Long> = recorder.elapsedMs
     val maxDurationMs: Long get() = container.settings.recordingDurationMs
 
-    /** Whichever waveform is live right now, so the screen does not have to choose. */
-    val waveform: StateFlow<List<Float>> =
-        combine(_recordState, monitor.waveform, recorder.waveform) { state, listen, record ->
+    /** Whichever live PCG is running right now, so the screen does not have to choose. */
+    val pcg: StateFlow<LivePcg> =
+        combine(_recordState, monitor.pcg, recorder.pcg) { state, listen, record ->
             if (state == RecordState.IDLE) listen else record
-        }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, LivePcg.EMPTY)
 
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()

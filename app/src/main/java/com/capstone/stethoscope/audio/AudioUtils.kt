@@ -35,9 +35,9 @@ internal fun writeSample16(buffer: ByteArray, at: Int, value: Int) {
  * normalized as it arrived and then stored, the bars already drawn would keep the scale
  * they were measured against, so one loud beat would rescale the newest bar and leave the
  * previous three seconds looking taller than they should — a trace with two different
- * y-axes on it, which is worse than no auto-ranging at all. Callers therefore hand
- * [WaveformWindow] the unnormalized peak plus the current [fullScale], and the window
- * rescales its whole history whenever the ceiling changes.
+ * y-axes on it, which is worse than no auto-ranging at all. The live trace itself is now
+ * [LivePcgWindow], which applies the same rule over its own window; this class still
+ * drives the numeric input-level meter.
  *
  * This affects the *display* only. Samples written to disk are corrected separately
  * and exactly by [SignalConditioner], so what the algorithm receives is never guessed at.

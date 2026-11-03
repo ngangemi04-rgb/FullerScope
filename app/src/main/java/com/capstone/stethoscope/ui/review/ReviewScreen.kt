@@ -54,6 +54,7 @@ fun ReviewScreen(
 ) {
     val recording by vm.recording.collectAsState()
     val isPlaying by vm.isPlaying.collectAsState()
+    val playbackError by vm.playbackError.collectAsState()
 
     Scaffold(
         topBar = {
@@ -108,6 +109,13 @@ fun ReviewScreen(
                                 if (isPlaying) R.string.action_stop_playback else R.string.action_play
                             ),
                             modifier = Modifier.size(36.dp),
+                        )
+                    }
+                    playbackError?.let {
+                        Text(
+                            stringResource(R.string.review_playback_failed, it),
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall,
                         )
                     }
                 }

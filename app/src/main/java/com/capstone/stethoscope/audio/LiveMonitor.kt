@@ -44,8 +44,8 @@ class LiveMonitor(
     private val _amplitude = MutableStateFlow(0f)
     val amplitude: StateFlow<Float> = _amplitude.asStateFlow()
 
-    private val waveformWindow = WaveformWindow()
-    val waveform: StateFlow<List<Float>> = waveformWindow.values
+    private val pcgWindow = LivePcgWindow()
+    val pcg: StateFlow<LivePcg> = pcgWindow.frame
 
     private val _usingUsbDevice = MutableStateFlow(false)
     val usingUsbDevice: StateFlow<Boolean> = _usingUsbDevice.asStateFlow()
@@ -64,7 +64,6 @@ class LiveMonitor(
         if (_active.value) return
         _active.value = true
         _error.value = null
-        waveformWindow.clear()
         meter.reset()
 
         job = scope.launch(Dispatchers.IO) {
@@ -79,6 +78,7 @@ class LiveMonitor(
                 source.start()
                 val actualRate = source.sampleRate
                 _usingUsbDevice.value = source.isStethoscope
+                pcgWindow.reset(actualRate)
 
                 val minOut = AudioTrack.getMinBufferSize(actualRate, channelOut, encoding)
                 if (minOut <= 0) {
@@ -107,17 +107,15 @@ class LiveMonitor(
                 deviceMonitor.headsetOutputDevice()?.let { track.setPreferredDevice(it) }
                 track.play()
 
-                val buffer = ByteArray(bufferSize.coerceAtLeast(2048))
+                // Small fixed reads, not one track-buffer's worth: the trace refreshes once
+                // per read, and some phones' track buffers are a sizeable part of a second.
+                val buffer = ByteArray(LivePcgWindow.READ_BYTES)
                 while (isActive && _active.value) {
                     val read = source.read(buffer, 0, buffer.size)
                     when {
                         read > 0 -> {
-                            // Push the raw peak and the current auto-range reference, so a
-                            // rescale redraws the whole trace rather than just the newest bar.
-                            val peak = meter.peak(buffer, read)
-                            val fullScale = meter.fullScale
-                            _amplitude.value = (peak / fullScale).coerceIn(0f, 1f)
-                            waveformWindow.push(peak, fullScale)
+                            _amplitude.value = meter.level(buffer, read)
+                            pcgWindow.push(buffer, read)
                             // Only play back through earbuds; never the speaker (feedback).
                             if (deviceMonitor.headsetOutputDevice() != null) {
                                 track.write(buffer, 0, read)

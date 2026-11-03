@@ -12,6 +12,7 @@ import com.capstone.stethoscope.data.RecordingRepository
 import com.capstone.stethoscope.data.SessionStore
 import com.capstone.stethoscope.data.model.AuscultationSite
 import com.capstone.stethoscope.data.model.Recording
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -31,6 +32,10 @@ class ReviewViewModel(
     val recording: StateFlow<Recording?> = _recording.asStateFlow()
 
     val isPlaying: StateFlow<Boolean> = player.isPlaying
+
+    /** Why the last play attempt failed, shown under the button; null when it worked. */
+    private val _playbackError = MutableStateFlow<String?>(null)
+    val playbackError: StateFlow<String?> = _playbackError.asStateFlow()
 
     /** Decrypted, transient copy used for playback only. */
     private var decryptedFile: File? = null
@@ -74,10 +79,21 @@ class ReviewViewModel(
             return
         }
         viewModelScope.launch {
-            val file = decryptedFile ?: withContext(Dispatchers.IO) {
-                repository.decryptToCache(rec)
-            }.also { decryptedFile = it }
-            player.toggle(file.absolutePath)
+            // Decryption and the phone's media player can both fail; either used to be
+            // an uncaught exception that crashed the app instead of a message.
+            runCatching {
+                val file = decryptedFile ?: withContext(Dispatchers.IO) {
+                    repository.decryptToCache(rec)
+                }.also { decryptedFile = it }
+                player.toggle(file.absolutePath)
+            }.onSuccess {
+                _playbackError.value = null
+            }.onFailure { t ->
+                if (t is CancellationException) throw t
+                player.stop()
+                cleanupDecrypted() // a half-written copy would fail the same way again
+                _playbackError.value = t.message ?: t.javaClass.simpleName
+            }
         }
     }
 
