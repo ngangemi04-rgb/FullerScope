@@ -6,6 +6,7 @@ import com.capstone.stethoscope.analysis.segmenter.doubles
 import com.capstone.stethoscope.analysis.segmenter.int
 import com.capstone.stethoscope.analysis.segmenter.list
 import com.capstone.stethoscope.analysis.segmenter.num
+import com.capstone.stethoscope.analysis.segmenter.str
 import java.io.InputStream
 import kotlin.math.PI
 import kotlin.math.cos
@@ -41,6 +42,10 @@ class MurmurClassifier(private val model: MurmurModel) {
      * @property score    0..1; NaN when not [ok].
      * @property features raw values before transform and scaling, in the model's order.
      * @property nBeats   beats that contributed.
+     * @property contributions each feature's term in the logit, `w·(t(f) − centre)/scale`
+     *                    (see [contributions]); NaN when not [ok].
+     * @property standardized each feature as `(t(f) − centre)/scale`: positive means higher
+     *                    than the training set's typical recording.
      */
     class Result(
         val ok: Boolean,
@@ -48,7 +53,22 @@ class MurmurClassifier(private val model: MurmurModel) {
         val isMurmur: Boolean,
         val features: DoubleArray,
         val nBeats: Int,
-    )
+        val contributions: DoubleArray = DoubleArray(features.size) { Double.NaN },
+        val standardized: DoubleArray = DoubleArray(features.size) { Double.NaN },
+    ) {
+        /**
+         * The feature that pushed the score hardest towards the decision that was made:
+         * the largest positive term for a murmur, the most negative for no murmur. Null
+         * when not [ok]. "Hardest" is relative to the training set's centre, which is
+         * where every term is zero.
+         */
+        val mainDriver: Int?
+            get() {
+                if (!ok) return null
+                val sign = if (isMurmur) 1.0 else -1.0
+                return contributions.indices.maxByOrNull { sign * contributions[it] }
+            }
+    }
 
     /**
      * @param x   the segmenter's normalised 2 kHz signal — not raw audio.
@@ -84,21 +104,34 @@ class MurmurClassifier(private val model: MurmurModel) {
         if (f.any { !it.isFinite() }) return Result(false, Double.NaN, false, f, nBeats)
 
         val score = score(f)
-        return Result(true, score, score >= model.threshold, f, nBeats)
+        return Result(true, score, score >= model.threshold, f, nBeats, contributions(f), standardize(f))
+    }
+
+    /**
+     * Each feature's term in the logit, `w·(t(f) − centre)/scale` — positive pushes towards
+     * "murmur", negative away. [score] is the logistic of the intercept plus their sum, so
+     * these explain the score exactly; nothing is approximated.
+     */
+    fun contributions(features: DoubleArray): DoubleArray {
+        val z = standardize(features)
+        return DoubleArray(z.size) { model.weight[it] * z[it] }
+    }
+
+    /** `(t(f) − centre)/scale` per feature, where t is the model's log transform if any. */
+    fun standardize(features: DoubleArray): DoubleArray = DoubleArray(features.size) { k ->
+        var v = features[k]
+        if (model.logTransform[k]) v = ln(max(v, EPS))
+        (v - model.center[k]) / model.scale[k]
     }
 
     /** z = intercept + Σ w·(t(f) − centre)/scale, through the logistic. The README's stage 3. */
-    fun score(features: DoubleArray): Double {
-        var z = model.intercept
-        for (k in features.indices) {
-            var v = features[k]
-            if (model.logTransform[k]) v = ln(max(v, EPS))
-            z += model.weight[k] * (v - model.center[k]) / model.scale[k]
-        }
-        return 1 / (1 + exp(-z))
-    }
+    fun score(features: DoubleArray): Double =
+        1 / (1 + exp(-(model.intercept + contributions(features).sum())))
 
     val threshold: Double get() = model.threshold
+
+    /** Feature names in the model's order, e.g. `sysFlat/S1`. */
+    val featureNames: List<String> get() = model.featureNames
 
     companion object {
         /** MATLAB's `eps`. */
@@ -287,6 +320,8 @@ class MurmurClassifier(private val model: MurmurModel) {
 
 /** Every constant from `murmurModel.json`, read rather than transcribed. */
 class MurmurModel(
+    val name: String,
+    val featureNames: List<String>,
     val intercept: Double,
     val weight: DoubleArray,
     val center: DoubleArray,
@@ -299,12 +334,17 @@ class MurmurModel(
     val envBins: Int,
     val envTrimFraction: Double,
     val sampleRate: Int,
+    /** Cross-validated sensitivity/specificity the team reports; null if the file has none. */
+    val crossValidatedSe: Double?,
+    val crossValidatedSp: Double?,
 ) {
     companion object {
         fun fromJson(text: String): MurmurModel {
             @Suppress("UNCHECKED_CAST")
             val m = MiniJson.parse(text) as Map<String, Any?>
             return MurmurModel(
+                name = m.str("name"),
+                featureNames = m.list("featureNames").map { it as String },
                 intercept = m.num("intercept"),
                 weight = m.doubles("weight"),
                 center = m.doubles("center"),
@@ -317,6 +357,8 @@ class MurmurModel(
                 envBins = m.int("envBins"),
                 envTrimFraction = m.num("envTrimFraction"),
                 sampleRate = m.int("sampleRate"),
+                crossValidatedSe = m["crossValidatedSe"] as? Double,
+                crossValidatedSp = m["crossValidatedSp"] as? Double,
             )
         }
     }

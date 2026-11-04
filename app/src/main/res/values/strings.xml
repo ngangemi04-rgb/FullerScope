@@ -82,7 +82,11 @@
     <string name="murmur_not_detected">No murmur detected</string>
     <string name="murmur_unable">Unable to analyze</string>
     <string name="murmur_unable_hint">Too few clear heartbeats to judge. Reposition the stethoscope, keep still, and record again.</string>
-    <string name="murmur_caveat">Development model: in testing on unseen patients it caught 57% of murmurs and cleared 69% of recordings without one. \"No murmur detected\" does not rule a murmur out.</string>
+    <string name="murmur_caveat">Development model: in cross-validated testing it caught %1$d%% of murmurs and cleared %2$d%% of recordings without one. \"No murmur detected\" does not rule a murmur out.</string>
+    <string name="murmur_caveat_unmeasured">Development model with no reported accuracy. \"No murmur detected\" does not rule a murmur out.</string>
+    <string name="murmur_driver">Main factor: %1$s (%2$s than typical)</string>
+    <string name="murmur_driver_higher">higher</string>
+    <string name="murmur_driver_lower">lower</string>
     <string name="segmented_y_axis">normalised amplitude</string>
     <string name="phase_s1">S1</string>
     <string name="phase_systole">Systole</string>

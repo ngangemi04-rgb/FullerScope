@@ -69,8 +69,48 @@ enum class MurmurOutcome { DETECTED, NOT_DETECTED, UNABLE }
 /**
  * @property score 0..1 from the logistic model; null when it could not be measured. Kept
  *                 on a POOR signal too (for testing) — [outcome] is UNABLE there.
+ * @property driver the feature that pushed the score hardest towards [outcome], or null
+ *                 when [outcome] is UNABLE. See [MurmurDriver].
  */
-data class MurmurFinding(val outcome: MurmurOutcome, val score: Float?)
+data class MurmurFinding(val outcome: MurmurOutcome, val score: Float?, val driver: MurmurDriver? = null)
+
+/**
+ * Which of the model's features mainly decided a murmur result, and which way it leaned.
+ *
+ * @property feature the model's own feature name (`sysFlat/S1`, …), so a retrained model
+ *                   with different features still stores something truthful.
+ * @property high    true when the feature was above the training set's typical value.
+ */
+data class MurmurDriver(val feature: String, val high: Boolean) {
+    /**
+     * Plain-English name of [feature], as the algorithm team describes it. Falls back to
+     * the raw name for a feature a retrained model introduces.
+     */
+    val label: String
+        get() = when (feature) {
+            "sysFlat/S1" -> "turbulence in systole, relative to S1"
+            "diaFlat/S1" -> "turbulence in diastole, relative to S1"
+            "sysOccupancy" -> "share of systole louder than diastole"
+            "sysEnvCorr" -> "beat-to-beat consistency of systole"
+            else -> feature
+        }
+
+    /** Stored form, e.g. `sysFlat/S1:high`. */
+    fun encode(): String = "$feature:${if (high) "high" else "low"}"
+
+    companion object {
+        fun decode(s: String?): MurmurDriver? {
+            if (s == null) return null
+            val i = s.lastIndexOf(':')
+            if (i <= 0) return null
+            return when (s.substring(i + 1)) {
+                "high" -> MurmurDriver(s.substring(0, i), true)
+                "low" -> MurmurDriver(s.substring(0, i), false)
+                else -> null
+            }
+        }
+    }
+}
 
 /**
  * What the analysis found.

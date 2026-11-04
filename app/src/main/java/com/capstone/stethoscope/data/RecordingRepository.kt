@@ -2,6 +2,7 @@ package com.capstone.stethoscope.data
 
 import com.capstone.stethoscope.analysis.HeartRhythm
 import com.capstone.stethoscope.analysis.HeartStates
+import com.capstone.stethoscope.analysis.MurmurDriver
 import com.capstone.stethoscope.analysis.MurmurOutcome
 import com.capstone.stethoscope.analysis.SignalQuality
 import com.capstone.stethoscope.data.db.RecordingDao
@@ -109,6 +110,7 @@ class RecordingRepository(
         segmentStates = segmentation?.encode(),
         murmurOutcome = murmurOutcome?.name,
         murmurScore = murmurScore,
+        murmurDriver = murmurDriver?.encode(),
         analyzedAt = analyzedAt,
     )
 
@@ -134,6 +136,7 @@ class RecordingRepository(
         segmentation = HeartStates.decode(segmentStates),
         murmurOutcome = murmurOutcome?.let { runCatching { MurmurOutcome.valueOf(it) }.getOrNull() },
         murmurScore = murmurScore,
+        murmurDriver = MurmurDriver.decode(murmurDriver),
         analyzedAt = analyzedAt,
     )
 }

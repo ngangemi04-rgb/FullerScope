@@ -17,6 +17,7 @@ import com.capstone.stethoscope.analysis.segmenter.SegmentedSignal
 import com.capstone.stethoscope.analysis.pcg.PcgPreprocessor
 import com.capstone.stethoscope.data.RecordingRepository
 import com.capstone.stethoscope.data.model.Recording
+import com.capstone.stethoscope.analysis.murmur.MurmurModel
 import com.capstone.stethoscope.export.ExportNaming
 import com.capstone.stethoscope.export.ReportExporter
 import kotlinx.coroutines.Dispatchers
@@ -32,6 +33,8 @@ class ResultViewModel(
     private val repository: RecordingRepository,
     private val classifier: HeartbeatClassifier,
     private val appContext: Context,
+    /** Threshold and reported performance, shown beside the murmur result. */
+    val murmurModel: MurmurModel? = null,
 ) : ViewModel() {
 
     enum class Phase { LOADING, ANALYZING, READY, ERROR }
@@ -110,6 +113,7 @@ class ResultViewModel(
                     segmentation = result.segmentation,
                     murmurOutcome = result.murmur?.outcome,
                     murmurScore = result.murmur?.score,
+                    murmurDriver = result.murmur?.driver,
                     analyzedAt = System.currentTimeMillis(),
                 )
                 repository.update(updated)
@@ -139,7 +143,7 @@ class ResultViewModel(
         runExport(onResult) { rec ->
             val pdf = ReportExporter.buildReportPdf(
                 appContext, rec, pcg = pcgFor(rec), pcgSampleRate = rec.sampleRate,
-                segmentPlot = _plot.value,
+                segmentPlot = _plot.value, murmurModel = murmurModel,
             )
             ReportExporter.copyToUri(appContext, pdf, destination)
         }
@@ -213,6 +217,7 @@ class ResultViewModel(
                     val pdf = ReportExporter.buildReportPdf(
                         appContext, rec, File(dir, "$base.pdf"), pcg = pcgFor(rec),
                         pcgSampleRate = rec.sampleRate, segmentPlot = _plot.value,
+                        murmurModel = murmurModel,
                     )
                     list.add(FileProvider.getUriForFile(appContext, authority, pdf))
                     val wav = repository.decryptTo(rec, File(dir, "$base.wav"))
@@ -238,7 +243,10 @@ class ResultViewModel(
             initializer {
                 val app = this[APPLICATION_KEY] as StethoscopeApp
                 val id = createSavedStateHandle().get<Long>("recordingId") ?: 0L
-                ResultViewModel(id, app.container.repository, app.container.classifier, app)
+                ResultViewModel(
+                    id, app.container.repository, app.container.classifier, app,
+                    runCatching { app.container.murmurModel }.getOrNull(),
+                )
             }
         }
     }

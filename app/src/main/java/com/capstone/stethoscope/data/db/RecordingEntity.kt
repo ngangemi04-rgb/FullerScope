@@ -50,5 +50,7 @@ data class RecordingEntity(
     /** "DETECTED"/"NOT_DETECTED"/"UNABLE". */
     val murmurOutcome: String? = null,
     val murmurScore: Float? = null,
+    /** [com.capstone.stethoscope.analysis.MurmurDriver.encode], e.g. `sysFlat/S1:high`. */
+    val murmurDriver: String? = null,
     val analyzedAt: Long? = null,
 )

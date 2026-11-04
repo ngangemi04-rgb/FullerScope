@@ -2,6 +2,7 @@ package com.capstone.stethoscope.data.model
 
 import com.capstone.stethoscope.analysis.HeartRhythm
 import com.capstone.stethoscope.analysis.HeartStates
+import com.capstone.stethoscope.analysis.MurmurDriver
 import com.capstone.stethoscope.analysis.MurmurOutcome
 import com.capstone.stethoscope.analysis.SignalQuality
 
@@ -55,6 +56,8 @@ data class Recording(
     val murmurOutcome: MurmurOutcome? = null,
     /** Murmur model score, 0..1; null when it could not be measured. */
     val murmurScore: Float? = null,
+    /** The feature that mainly decided [murmurOutcome]; null when UNABLE or not analysed. */
+    val murmurDriver: MurmurDriver? = null,
     val analyzedAt: Long? = null,
 ) {
     val isAnalyzed: Boolean get() = analyzedAt != null

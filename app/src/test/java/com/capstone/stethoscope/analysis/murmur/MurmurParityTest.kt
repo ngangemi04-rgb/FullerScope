@@ -1,5 +1,6 @@
 package com.capstone.stethoscope.analysis.murmur
 
+import com.capstone.stethoscope.analysis.MurmurDriver
 import com.capstone.stethoscope.analysis.MurmurOutcome
 import com.capstone.stethoscope.analysis.SignalQuality
 import com.capstone.stethoscope.analysis.segmenter.HeartSoundSegmenter
@@ -124,5 +125,52 @@ class MurmurParityTest {
         val out = clf.classify(x, 2000, arrayOf(intArrayOf(1, 300, 700, 1000, 1500)))
         assertTrue(!out.ok)
         assertTrue(!out.isMurmur)
+    }
+
+    @Test
+    fun `contributions explain the score exactly`() {
+        for (c in cases("featureOnly")) {
+            val f = c.doubles("features")
+            val z = model.intercept + clf.contributions(f).sum()
+            assertEquals(c.num("score"), 1 / (1 + kotlin.math.exp(-z)), TOL)
+        }
+    }
+
+    @Test
+    fun `main driver pushes towards the decision that was made`() {
+        for (r in cases("recordings")) {
+            val seg = r.list("seg").map { row -> (row as List<Any?>).map { (it as Double).toInt() }.toIntArray() }
+            val out = clf.classify(r.doubles("audio"), r.int("sampleRate"), seg.toTypedArray())
+            val k = out.mainDriver!!
+            val c = out.contributions
+            if (out.isMurmur) {
+                assertTrue("${r.str("name")}: murmur driver must raise the score", c[k] > 0)
+                assertEquals(c.max(), c[k], 0.0)
+            } else {
+                assertTrue("${r.str("name")}: clear driver must lower the score", c[k] < 0)
+                assertEquals(c.min(), c[k], 0.0)
+            }
+        }
+        val failed = clf.classify(DoubleArray(4000), 2000, arrayOf(intArrayOf(1, 300, 700, 1000, 1500)))
+        assertEquals(null, failed.mainDriver)
+    }
+
+    @Test
+    fun `driver survives the round trip through the database`() {
+        val d = MurmurDriver("sysFlat/S1", high = true)
+        assertEquals("sysFlat/S1:high", d.encode())
+        assertEquals(d, MurmurDriver.decode(d.encode()))
+        assertEquals(MurmurDriver("diaFlat/S1", false), MurmurDriver.decode("diaFlat/S1:low"))
+        assertEquals(null, MurmurDriver.decode("garbage"))
+        assertEquals(null, MurmurDriver.decode(null))
+    }
+
+    @Test
+    fun `threshold and reported performance come from the model file`() {
+        // The team asked that the threshold be read, not hard-coded (0.428 -> 0.165 on retraining).
+        assertEquals(0.1653, model.threshold, 1e-4)
+        assertEquals(0.671, model.crossValidatedSe!!, 1e-3)
+        assertEquals(0.775, model.crossValidatedSp!!, 1e-3)
+        assertEquals(listOf("diaFlat/S1", "sysOccupancy", "sysFlat/S1", "sysEnvCorr"), clf.featureNames)
     }
 }

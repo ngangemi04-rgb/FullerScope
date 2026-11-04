@@ -1,6 +1,7 @@
 package com.capstone.stethoscope.di
 
 import android.content.Context
+import com.capstone.stethoscope.analysis.murmur.MurmurModel
 import com.capstone.stethoscope.analysis.HeartbeatClassifier
 import com.capstone.stethoscope.analysis.MockHeartbeatClassifier
 import com.capstone.stethoscope.analysis.segmenter.HeartSoundSegmenter
@@ -74,6 +75,17 @@ class AppContainer(context: Context) {
      * Swap in [MockHeartbeatClassifier] to demo the UI without real analysis; it answers
      * from the recording's length rather than its audio.
      */
+    /**
+     * The murmur model's constants, for showing its threshold and reported sensitivity/
+     * specificity next to a result — read from the same file the classifier scores with,
+     * so a model swap cannot leave stale numbers on screen.
+     */
+    val murmurModel: MurmurModel by lazy {
+        appContext.assets.open("murmur/model.json").use {
+            MurmurModel.fromJson(it.bufferedReader().readText())
+        }
+    }
+
     val classifier: HeartbeatClassifier = HeartSoundSegmenter(
         modelSource = { appContext.assets.open("segmenter/model.json") },
         murmurSource = { appContext.assets.open("murmur/model.json") },

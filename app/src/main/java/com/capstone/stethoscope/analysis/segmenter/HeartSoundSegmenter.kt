@@ -6,6 +6,7 @@ import com.capstone.stethoscope.analysis.HeartSignal
 import com.capstone.stethoscope.analysis.HeartSoundResult
 import com.capstone.stethoscope.analysis.HeartbeatClassifier
 import com.capstone.stethoscope.analysis.MurmurFinding
+import com.capstone.stethoscope.analysis.MurmurDriver
 import com.capstone.stethoscope.analysis.MurmurOutcome
 import com.capstone.stethoscope.analysis.SignalQuality
 import com.capstone.stethoscope.analysis.murmur.MurmurClassifier
@@ -332,7 +333,10 @@ class HeartSoundSegmenter(
                 out.isMurmur -> MurmurOutcome.DETECTED
                 else -> MurmurOutcome.NOT_DETECTED
             }
-            return MurmurFinding(outcome, out.score.takeIf { out.ok }?.toFloat())
+            val driver = out.mainDriver
+                ?.takeIf { outcome != MurmurOutcome.UNABLE }
+                ?.let { MurmurDriver(clf.featureNames[it], out.standardized[it] > 0) }
+            return MurmurFinding(outcome, out.score.takeIf { out.ok }?.toFloat(), driver)
         }
 
         /** MATLAB `filter(b, a, x)` (direct form II transposed, zero initial state). */

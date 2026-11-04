@@ -44,7 +44,7 @@ score = classifyMurmur(x, Fs, seg, model)
   **"unable to analyze"**, which is a third outcome, not a negative. It
   happens when fewer than three usable beats are found.
 - `score` — 0 to 1
-- `isMurmur` — `score >= 0.4277`
+- `isMurmur` — `score >= 0.1653` (read it from `murmurModel.json`, don't hardcode)
 
 ## The only dependency
 
@@ -183,20 +183,35 @@ value, and decisions must match exactly.
 It detects **murmurs**. It does not detect coronary artery disease, which is
 silent, and it does not identify which valve is involved.
 
-Honest performance, on patients never seen in training, at the recording sites
-it was trained on:
+Trained on PhysioNet `training-b` — 459 recordings from 100 patients, 74 with a
+murmur from 15 patients, all recorded on one 3M Littmann E4000.
+
+Performance, from five-fold patient-disjoint cross-validation over all 100
+patients:
 
 | | |
 |---|---|
-| AUC | 0.696 |
-| Sensitivity | 0.574 |
-| Specificity | 0.693 |
+| AUC | 0.769 |
+| Sensitivity | 0.671 |
+| Specificity | 0.775 |
 
 The design requirement is sensitivity ≥ 75% and specificity > 80%. **This does
-not meet it.** It is the best available from the PhysioNet corpus, which has
-76 patients with murmurs across the two sites with usable patient records, and
-six different stethoscopes.
+not meet it**, though it is close.
 
-Performance on hardware other than the six in that corpus is unknown and
-cannot be estimated from it. Treat these numbers as a development reference,
-not as a specification of what the device will do.
+Three things to read alongside those numbers.
+
+They are **cross-validated, not held out**. A 70/30 held-out split of the same
+site gives AUC 0.657, but it rests on five patients with murmurs and its
+interval runs [0.504, 0.829] — too wide to be useful. Cross-validation over
+every patient is the better-powered estimate and the one quoted here.
+
+The **threshold was chosen on the same cross-validated predictions** the
+sensitivity and specificity are reported against. The AUC is unaffected, being
+threshold-free, but that pair is mildly optimistic.
+
+**One site, one stethoscope, 15 patients with murmurs.** Training on this site
+alone rather than on five pooled sites raised cross-validated AUC from 0.70 to
+0.77, because the other sites were contributing device variation rather than
+signal. The flip side is that performance on any other hardware — including
+this device — is unknown and cannot be estimated from it. Treat these numbers
+as a development reference, not as a specification of what the device will do.

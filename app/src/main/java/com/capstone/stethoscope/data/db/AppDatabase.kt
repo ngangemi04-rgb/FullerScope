@@ -14,7 +14,8 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 // (signalQuality, rhythm, heartRateBpm, beatCount, signalConfidence, bpmVariability).
 // v7 added segmentStates: the segmenter's per-frame phases, for the segmented plot.
 // v8 added murmurOutcome + murmurScore: the murmur classifier's result.
-@Database(entities = [RecordingEntity::class], version = 8, exportSchema = false)
+// v9 added murmurDriver and cleared murmur results for the retrained (training-b) model.
+@Database(entities = [RecordingEntity::class], version = 9, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun recordingDao(): RecordingDao
@@ -30,7 +31,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "stethoscope.db",
                 )
-                    .addMigrations(MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
+                    .addMigrations(MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
                     // Schemas older than v5 are still simply recreated.
                     .fallbackToDestructiveMigration(dropAllTables = true)
                     .build().also { INSTANCE = it }
@@ -80,6 +81,18 @@ abstract class AppDatabase : RoomDatabase() {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE recordings ADD COLUMN `murmurOutcome` TEXT")
                 db.execSQL("ALTER TABLE recordings ADD COLUMN `murmurScore` REAL")
+            }
+        }
+
+        /**
+         * Adds murmurDriver, and clears every stored murmur result: they were scored by the
+         * previous model (2026-10-28 constants, threshold 0.428), and ResultViewModel
+         * re-analyses a recording with no murmur result when it is opened.
+         */
+        val MIGRATION_8_9 = object : Migration(8, 9) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE recordings ADD COLUMN `murmurDriver` TEXT")
+                db.execSQL("UPDATE recordings SET murmurOutcome = NULL, murmurScore = NULL")
             }
         }
 

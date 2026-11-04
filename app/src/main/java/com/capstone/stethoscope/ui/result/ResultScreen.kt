@@ -41,12 +41,15 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.capstone.stethoscope.R
+import com.capstone.stethoscope.analysis.MurmurDriver
 import com.capstone.stethoscope.analysis.MurmurOutcome
+import com.capstone.stethoscope.analysis.murmur.MurmurModel
 import com.capstone.stethoscope.data.model.Recording
 import com.capstone.stethoscope.export.ExportNaming
 import com.capstone.stethoscope.export.WhatsAppSharer
 import com.capstone.stethoscope.ui.components.SegmentedPlot
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -152,7 +155,7 @@ fun ResultScreen(
                                     // Testing readout: the raw numbers behind the plot, shown
                                     // even on a poor signal. English-only and plain on purpose.
                                     Text(
-                                        testingReadout(rec),
+                                        testingReadout(rec, vm.murmurModel),
                                         style = MaterialTheme.typography.bodyMedium,
                                         fontFamily = FontFamily.Monospace,
                                     )
@@ -162,7 +165,7 @@ fun ResultScreen(
                                         style = MaterialTheme.typography.bodyMedium,
                                     )
                                 }
-                                rec.murmurOutcome?.let { MurmurSection(it) }
+                                rec.murmurOutcome?.let { MurmurSection(it, rec.murmurDriver, vm.murmurModel) }
                                 Text(
                                     stringResource(R.string.segmented_disclaimer),
                                     style = MaterialTheme.typography.bodySmall,
@@ -238,11 +241,12 @@ fun ResultScreen(
 }
 
 /**
- * The murmur classifier's answer, with its measured limits right underneath: a "no
- * murmur" from a model that misses four in ten must not read as an all-clear.
+ * The murmur classifier's answer, the feature that mainly decided it, and the model's
+ * measured limits right underneath: a "no murmur" from a model that misses a third of
+ * murmurs must not read as an all-clear.
  */
 @Composable
-private fun MurmurSection(outcome: MurmurOutcome) {
+private fun MurmurSection(outcome: MurmurOutcome, driver: MurmurDriver?, model: MurmurModel?) {
     HorizontalDivider()
     Text(stringResource(R.string.murmur_title), style = MaterialTheme.typography.titleMedium)
     Text(
@@ -257,17 +261,32 @@ private fun MurmurSection(outcome: MurmurOutcome) {
         color = if (outcome == MurmurOutcome.DETECTED) MaterialTheme.colorScheme.error
         else MaterialTheme.colorScheme.onSurface,
     )
+    if (driver != null && outcome != MurmurOutcome.UNABLE) {
+        Text(
+            stringResource(
+                R.string.murmur_driver,
+                driver.label,
+                stringResource(if (driver.high) R.string.murmur_driver_higher else R.string.murmur_driver_lower),
+            ),
+            style = MaterialTheme.typography.bodyMedium,
+        )
+    }
+    val se = model?.crossValidatedSe
+    val sp = model?.crossValidatedSp
     Text(
-        stringResource(
-            if (outcome == MurmurOutcome.UNABLE) R.string.murmur_unable_hint else R.string.murmur_caveat
-        ),
+        when {
+            outcome == MurmurOutcome.UNABLE -> stringResource(R.string.murmur_unable_hint)
+            se != null && sp != null ->
+                stringResource(R.string.murmur_caveat, (se * 100).roundToInt(), (sp * 100).roundToInt())
+            else -> stringResource(R.string.murmur_caveat_unmeasured)
+        },
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
 }
 
 /** Plain-text dump of the stored analysis numbers, for testing. */
-private fun testingReadout(rec: Recording): String = buildString {
+private fun testingReadout(rec: Recording, model: MurmurModel?): String = buildString {
     fun fmt(v: Float?, pattern: String) = v?.let { pattern.format(it) } ?: "—"
     appendLine("Heart rate:     ${fmt(rec.heartRateBpm, "%.1f bpm")}")
     appendLine("Rhythm:         ${rec.rhythm?.name?.lowercase() ?: "—"}")
@@ -275,5 +294,6 @@ private fun testingReadout(rec: Recording): String = buildString {
     appendLine("Beats (S1):     ${rec.beatCount ?: "—"}")
     append("Signal quality: ${fmt(rec.signalConfidence?.times(100), "%.0f%%")}")
     appendLine(" (${rec.signalQuality?.name?.lowercase() ?: "—"})")
-    append("Murmur score:   ${fmt(rec.murmurScore, "%.3f")} (cut-off 0.428)")
+    appendLine("Murmur score:   ${fmt(rec.murmurScore, "%.3f")} (cut-off ${model?.threshold?.let { "%.3f".format(it) } ?: "—"})")
+    append("Murmur driver:  ${rec.murmurDriver?.encode() ?: "—"}")
 }
