@@ -8,6 +8,8 @@ import android.graphics.pdf.PdfDocument
 import android.net.Uri
 import com.capstone.stethoscope.analysis.HeartPhase
 import com.capstone.stethoscope.analysis.MurmurOutcome
+import com.capstone.stethoscope.analysis.segmenter.HeartSoundSegmenter
+import com.capstone.stethoscope.analysis.SignalQuality
 import com.capstone.stethoscope.analysis.murmur.MurmurModel
 import com.capstone.stethoscope.analysis.segmenter.SegmentedSignal
 import com.capstone.stethoscope.data.model.AuscultationSite
@@ -54,8 +56,8 @@ object ReportExporter {
     ): File {
         val doc = PdfDocument()
         val pageInfo = PdfDocument.PageInfo.Builder(595, 842, 1).create() // A4 @ 72dpi
-        val page = doc.startPage(pageInfo)
-        val canvas = page.canvas
+        var page = doc.startPage(pageInfo)
+        var canvas = page.canvas
 
         val title = Paint().apply { textSize = 22f; isFakeBoldText = true }
         val heading = Paint().apply { textSize = 14f; isFakeBoldText = true }
@@ -117,8 +119,6 @@ object ReportExporter {
             left, y, body,
         ); y += 30f
 
-        // Segmentation only, for now — matching the Analysis screen. Heart rate, rhythm and
-        // signal quality are still stored on the recording but not printed.
         if (segmentPlot != null) {
             canvas.drawText("Heart sound segmentation", left, y, heading); y += 20f
             val d = segmentPlot.durationSec
@@ -135,7 +135,7 @@ object ReportExporter {
             y = drawPhaseLegend(canvas, left, y)
             recording.murmurOutcome?.let {
                 y += 26f
-                canvas.drawText("Murmur screen: ${murmurLabel(it)}", left, y, heading); y += 4f
+                canvas.drawText("Murmur screen: ${murmurLabel(it, recording.murmurScore)}", left, y, heading); y += 4f
                 val driver = recording.murmurDriver
                 if (driver != null && it != MurmurOutcome.UNABLE) {
                     y += 14f
@@ -143,6 +143,7 @@ object ReportExporter {
                     canvas.drawText("Main factor: ${driver.label} ($dir than typical)", left, y, body)
                 }
             }
+            y = drawMeasurements(canvas, recording, murmurModel, left, y + 26f)
         } else if (pcg != null && pcg.isNotEmpty()) {
             // Not analysed yet: the plain trace is still worth having.
             // 20f, not 8f: drawPcg prints its caption just above the plot, and at 8f that
@@ -154,6 +155,14 @@ object ReportExporter {
         }
 
         y += 24f
+        // The measurements table can push the footer off an A4 page that also carries the
+        // chest diagram; give the footer its own page rather than clip it.
+        if (y + FOOTER_HEIGHT > pageInfo.pageHeight - 20f) {
+            doc.finishPage(page)
+            page = doc.startPage(PdfDocument.PageInfo.Builder(595, 842, 2).create())
+            canvas = page.canvas
+            y = 60f
+        }
         val fine = Paint().apply { textSize = 9f }
         canvas.drawText(
             "The segmenter locates S1, systole, S2 and diastole (S1 detection F1 0.95 on 862 held-out patients).",
@@ -188,12 +197,104 @@ object ReportExporter {
         return out
     }
 
-    /** English, like the rest of the report. */
-    private fun murmurLabel(outcome: MurmurOutcome) = when (outcome) {
+    /**
+     * English, like the rest of the report. UNABLE has two causes, told apart by whether a
+     * score came out: none means too few usable beats; one means the signal was POOR and
+     * the verdict withheld (the score is in the measurements table).
+     */
+    private fun murmurLabel(outcome: MurmurOutcome, score: Float?) = when (outcome) {
         MurmurOutcome.DETECTED -> "possible murmur detected"
         MurmurOutcome.NOT_DETECTED -> "no murmur detected"
-        MurmurOutcome.UNABLE -> "unable to analyze (too few clear heartbeats)"
+        MurmurOutcome.UNABLE ->
+            if (score == null) "unable to analyze (too few clear heartbeats)"
+            else "not reported (poor signal)"
     }
+
+    /**
+     * Every stored number, in two columns, for testing. On a POOR signal they are all
+     * still printed — the app hides them elsewhere — under a warning, and rhythm is worked
+     * out from the stored variability with the same rule the app uses on a good signal.
+     */
+    private fun drawMeasurements(
+        canvas: android.graphics.Canvas,
+        r: Recording,
+        model: MurmurModel?,
+        left: Float,
+        top: Float,
+    ): Float {
+        if (!r.isAnalyzed) return top
+        val heading = Paint().apply { textSize = 14f; isFakeBoldText = true }
+        val label = Paint().apply { textSize = 10.5f; color = 0xFF555555.toInt() }
+        val value = Paint().apply { textSize = 10.5f; isFakeBoldText = true }
+        val warn = Paint().apply { textSize = 10f; color = 0xFFB3261E.toInt() }
+        val poor = r.signalQuality == SignalQuality.POOR
+        var y = top
+
+        canvas.drawText("Measurements", left, y, heading); y += 16f
+        if (poor) {
+            val conf = r.signalConfidence?.let { "%.0f%%".format(Locale.US, it * 100) } ?: "—"
+            // conf already ends in "%", so it is concatenated after formatting, never
+            // inside the format string (where "53%, below" is an invalid conversion).
+            val needed = "%.0f%%".format(Locale.US, HeartSoundSegmenter.QUALITY_THRESHOLD * 100)
+            canvas.drawText(
+                "Poor signal (segmenter confidence " + conf + ", below the " + needed +
+                    " needed): treat these numbers with caution.",
+                left, y, warn,
+            ); y += 15f
+        }
+
+        val cv = r.bpmVariability
+        val beats = r.beatCount
+        val rhythm = if (poor && cv != null && beats != null) {
+            HeartSoundSegmenter.rhythmFor(cv.toDouble(), beats)
+        } else {
+            r.rhythm
+        }
+        val cvRule = cv?.let {
+            val op = if (it > HeartSoundSegmenter.IRREGULAR_CV) ">" else "≤"
+            // Three decimals: at two, a CV of 0.205 printed as "0.20 > 0.20".
+            " (CV %.3f %s %.2f)".format(Locale.US, it, op, HeartSoundSegmenter.IRREGULAR_CV)
+        }.orEmpty()
+        val threshold = model?.threshold
+        val murmurScore = r.murmurScore?.let { s ->
+            val cut = threshold?.let { "%.3f".format(Locale.US, it) } ?: "—"
+            val side = threshold?.let { t -> if (s >= t) ", above" else ", below" }.orEmpty()
+            "%.3f (cut-off %s%s)".format(Locale.US, s, cut, side)
+        } ?: "—"
+        fun fmt(v: Float?, p: String) = v?.let { p.format(Locale.US, it) } ?: "—"
+
+        val leftCol = listOf(
+            "Heart rate" to fmt(r.heartRateBpm, "%.1f bpm"),
+            "Rhythm" to (rhythm?.name?.lowercase() ?: "—") + cvRule,
+            "Variability (CV)" to fmt(cv, "%.3f"),
+            "Beats (S1) detected" to (beats?.toString() ?: "—"),
+        )
+        val rightCol = listOf(
+            "Signal quality" to (r.signalQuality?.name?.lowercase() ?: "—") +
+                fmt(r.signalConfidence?.times(100), " (%.0f%%)"),
+            "Murmur score" to murmurScore,
+            "Murmur model" to (model?.name ?: "—"),
+            "Duration" to "%.1f s".format(Locale.US, r.durationMs / 1000.0),
+        )
+        val col2 = left + 268f
+        for (i in leftCol.indices) {
+            canvas.drawText(leftCol[i].first, left, y, label)
+            canvas.drawText(leftCol[i].second, left + 112f, y, value)
+            canvas.drawText(rightCol[i].first, col2, y, label)
+            canvas.drawText(rightCol[i].second, col2 + 82f, y, value)
+            y += 15f
+        }
+        r.murmurDriver?.let { d ->
+            val dir = if (d.high) "higher" else "lower"
+            canvas.drawText("Main murmur factor", left, y, label)
+            canvas.drawText("${d.label} ($dir than typical)" + if (poor) " — poor signal" else "", left + 112f, y, value)
+            y += 15f
+        }
+        return y
+    }
+
+    /** Height of the fine print at the bottom of the report. */
+    private const val FOOTER_HEIGHT = 4 * 12f
 
     /**
      * Draws a small chest with the recorded site marked, and returns the y to continue

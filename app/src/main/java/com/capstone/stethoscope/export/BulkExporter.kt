@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import android.provider.DocumentsContract
 import com.capstone.stethoscope.analysis.RecordingAnalyzer
+import com.capstone.stethoscope.analysis.segmenter.HeartSoundSegmenter
 import com.capstone.stethoscope.analysis.murmur.MurmurModel
 import com.capstone.stethoscope.data.RecordingRepository
 import com.capstone.stethoscope.data.model.Recording
@@ -113,6 +114,8 @@ class BulkExporter(
         r.signalConfidence?.let { "%.3f".format(Locale.US, it) }.orEmpty(),
         r.heartRateBpm?.let { "%.1f".format(Locale.US, it) }.orEmpty(),
         r.rhythm?.name.orEmpty(),
+        // The rhythm rule applied regardless of signal quality (rhythm is UNKNOWN on POOR).
+        r.bpmVariability?.let { cv -> r.beatCount?.let { HeartSoundSegmenter.rhythmFor(cv.toDouble(), it).name } }.orEmpty(),
         r.bpmVariability?.let { "%.3f".format(Locale.US, it) }.orEmpty(),
         r.beatCount?.toString().orEmpty(),
         r.murmurOutcome?.name.orEmpty(),
@@ -142,7 +145,7 @@ class BulkExporter(
         val HEADER = listOf(
             "index", "name", "patient_id", "notes", "recorded_at", "duration_s", "sample_rate_hz",
             "site", "site_note", "sex", "age_years",
-            "signal_quality", "signal_confidence", "heart_rate_bpm", "rhythm", "bpm_cv", "beats",
+            "signal_quality", "signal_confidence", "heart_rate_bpm", "rhythm", "rhythm_from_cv", "bpm_cv", "beats",
             "murmur_outcome", "murmur_score", "murmur_threshold", "murmur_driver", "murmur_model",
             "wav_file", "pdf_file", "error",
         )

@@ -11,7 +11,8 @@ Then on the PC, either
 
 Naming convention (the app's name field): conditions first, replicate last as r<N>,
     "mitral bell r1", "aortic diaphragm gain 1.5 r3", "trial_A-R12"
-Everything before r<N> is the condition. Case and spacing differences ("Mitral  Bell",
+Everything before r<N> is the condition (a bare trailing number, "mitral systolic 2",
+also counts, and "baseline" is r1 when "baseline 2" exists). Case and spacing differences ("Mitral  Bell",
 "mitral-bell") are treated as the same condition, so a typo in capitalisation does not
 split a condition in two. Names without a trailing r<N> are put in _unsorted/ and listed,
 never guessed at.
@@ -43,6 +44,9 @@ ADB_CANDIDATES = [
 ]
 EXPORT_PREFIX = "FullerScope_export_"
 REPLICATE = re.compile(r"^(?P<cond>.*?)[\s_-]*\br(?:ep)?\s*(?P<n>\d+)\s*$", re.IGNORECASE)
+# What people actually typed on the first test day: "mitral systolic 2". Only a number
+# set off by a space counts, so "60" in "mitral systolic 60 1" stays in the condition.
+BARE_REPLICATE = re.compile(r"^(?P<cond>.*\S)\s+(?P<n>\d+)\s*$")
 
 
 def find_adb():
@@ -71,8 +75,11 @@ def pull_newest_export(dest_root: Path) -> Path:
         print(f"Several phones attached ({', '.join(devices)}); using {devices[0]}.")
     serial = devices[0]
     # Trailing slash: /sdcard is a symlink, and find does not descend into one without it.
-    found = adb(adb_path, "shell", f"find /sdcard/ -maxdepth 5 -type d -name '{EXPORT_PREFIX}*' 2>/dev/null",
-                serial=serial).stdout.split()
+    # One path per line, not .split(): the folder people pick can have spaces in it
+    # ("Testing November 4 2026 sim lab").
+    out = adb(adb_path, "shell", f"find /sdcard/ -maxdepth 5 -type d -name '{EXPORT_PREFIX}*' 2>/dev/null",
+              serial=serial).stdout
+    found = [line.strip() for line in out.splitlines() if line.strip()]
     if not found:
         sys.exit("No FullerScope_export_* folder on the phone. In the app: Library -> Export all.")
     newest = max(found, key=lambda p: p.rsplit("/", 1)[-1])  # names sort by date/time
@@ -96,10 +103,15 @@ def safe_folder(name: str) -> str:
 
 
 def parse_name(name: str):
-    m = REPLICATE.match(name or "")
-    if not m or not m.group("cond").strip():
+    """(condition, replicate); replicate None when the name has no trailing number."""
+    name = (name or "").strip()
+    if not name:
         return None, None
-    return m.group("cond").strip(), int(m.group("n"))
+    for rx in (REPLICATE, BARE_REPLICATE):
+        m = rx.match(name)
+        if m and m.group("cond").strip():
+            return m.group("cond").strip(), int(m.group("n"))
+    return name, None
 
 
 def main():
@@ -128,9 +140,14 @@ def main():
     display = {}                      # condition key -> first spelling seen, used as folder name
     reps = defaultdict(lambda: defaultdict(list))  # key -> replicate -> [row]
     unsorted = []
-    for row in rows:
-        cond, n = parse_name(row.get("name", ""))
-        if cond is None:
+    parsed = [parse_name(row.get("name", "")) for row in rows]
+    numbered = {condition_key(c) for c, n in parsed if c is not None and n is not None}
+    for row, (cond, n) in zip(rows, parsed):
+        # "baseline" next to "baseline 2" and "baseline 3" is that condition's first
+        # replicate. A number-less name with no numbered siblings is left for a human.
+        if cond is not None and n is None and condition_key(cond) in numbered:
+            n = 1
+        if cond is None or n is None:
             row["condition"], row["replicate"] = "", ""
             unsorted.append(row)
             continue
@@ -198,7 +215,7 @@ def main():
         print(f"{s['condition']:<{width}}  {s['recordings']:<3} {s['replicates']}"
               + (f"   <-- {'; '.join(flags)}" if flags else ""))
     if unsorted:
-        print(f"\n{len(unsorted)} without a trailing r<N> (copied to _unsorted/, check the name):")
+        print(f"\n{len(unsorted)} with no name or replicate (copied to _unsorted/, check the name):")
         for r in unsorted:
             print(f"  #{r.get('index')}  {r.get('recorded_at')}  name={r.get('name')!r}")
     errors = [r for r in rows if r.get("error")]

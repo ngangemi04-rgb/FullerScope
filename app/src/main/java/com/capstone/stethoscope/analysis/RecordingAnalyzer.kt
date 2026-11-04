@@ -19,9 +19,14 @@ class RecordingAnalyzer(
     private val classifier: HeartbeatClassifier,
 ) {
 
-    /** True when [rec] already has everything the Analysis screen and report show. */
+    /**
+     * True when [rec] already has everything the Analysis screen and report show. A
+     * murmur score without a main factor was scored before poor-signal recordings kept
+     * theirs (2026-11-04): analysing again is deterministic and fills it in.
+     */
     fun isComplete(rec: Recording): Boolean =
-        rec.isAnalyzed && rec.segmentation != null && rec.murmurOutcome != null
+        rec.isAnalyzed && rec.segmentation != null && rec.murmurOutcome != null &&
+            (rec.murmurScore == null || rec.murmurDriver != null)
 
     /**
      * Analyses [rec], saves the result, and returns the updated recording.

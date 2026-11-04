@@ -297,13 +297,19 @@ class HeartSoundSegmenter(
             preprocess(DoubleArray(samples.size) { samples[it] / 32768.0 }, sampleRate)
 
         /** Turns a segmentation into what the app stores and shows. */
+        /**
+         * The rhythm rule on its own, without the signal-quality gate: the report applies it
+         * to a POOR recording's stored variability too, clearly marked, for testing.
+         */
+        fun rhythmFor(bpmCV: Double, beats: Int): HeartRhythm = when {
+            beats < MIN_BEATS_FOR_RHYTHM || !bpmCV.isFinite() -> HeartRhythm.UNKNOWN
+            bpmCV > IRREGULAR_CV -> HeartRhythm.IRREGULAR
+            else -> HeartRhythm.REGULAR
+        }
+
         fun toResult(s: Segmentation): HeartSoundResult {
             val good = s.confidence >= QUALITY_THRESHOLD && s.s1Times.size >= 2
-            val rhythm = when {
-                !good || s.s1Times.size < MIN_BEATS_FOR_RHYTHM -> HeartRhythm.UNKNOWN
-                s.bpmCV > IRREGULAR_CV -> HeartRhythm.IRREGULAR
-                else -> HeartRhythm.REGULAR
-            }
+            val rhythm = if (good) rhythmFor(s.bpmCV, s.s1Times.size) else HeartRhythm.UNKNOWN
             return HeartSoundResult(
                 quality = if (good) SignalQuality.GOOD else SignalQuality.POOR,
                 rhythm = rhythm,
@@ -333,8 +339,9 @@ class HeartSoundSegmenter(
                 out.isMurmur -> MurmurOutcome.DETECTED
                 else -> MurmurOutcome.NOT_DETECTED
             }
+            // Kept on a POOR signal too, like the score: the report shows both there,
+            // marked poor. Screens that only show a verdict check the outcome first.
             val driver = out.mainDriver
-                ?.takeIf { outcome != MurmurOutcome.UNABLE }
                 ?.let { MurmurDriver(clf.featureNames[it], out.standardized[it] > 0) }
             return MurmurFinding(outcome, out.score.takeIf { out.ok }?.toFloat(), driver)
         }
