@@ -117,6 +117,17 @@
     <!-- Library screen -->
     <string name="library_title">Recordings</string>
     <string name="library_empty">No recordings yet.</string>
+    <string name="export_all">Export all</string>
+    <string name="export_all_running_title">Exporting recordings</string>
+    <string name="export_all_analyzing">Analyzing %1$d of %2$d…</string>
+    <string name="export_all_writing">Saving %1$d of %2$d…</string>
+    <string name="export_all_keep_open">Keep this screen open. Recordings not analyzed yet are analyzed first, about 15 seconds each.</string>
+    <string name="export_all_done_title">Export finished</string>
+    <string name="export_all_done_body">Saved %1$d recordings, with a recordings.csv index, to the folder %2$s.</string>
+    <string name="export_all_failures">%1$d could not be exported:</string>
+    <string name="export_all_failed_title">Export failed</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_ok">OK</string>
     <string name="not_analyzed">Not analyzed</string>
 
     <!-- Settings screen -->

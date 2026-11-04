@@ -10,11 +10,9 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.capstone.stethoscope.StethoscopeApp
-import com.capstone.stethoscope.analysis.HeartSignal
+import com.capstone.stethoscope.analysis.RecordingAnalyzer
 import com.capstone.stethoscope.analysis.HeartbeatClassifier
-import com.capstone.stethoscope.analysis.segmenter.HeartSoundSegmenter
 import com.capstone.stethoscope.analysis.segmenter.SegmentedSignal
-import com.capstone.stethoscope.analysis.pcg.PcgPreprocessor
 import com.capstone.stethoscope.data.RecordingRepository
 import com.capstone.stethoscope.data.model.Recording
 import com.capstone.stethoscope.analysis.murmur.MurmurModel
@@ -36,6 +34,8 @@ class ResultViewModel(
     /** Threshold and reported performance, shown beside the murmur result. */
     val murmurModel: MurmurModel? = null,
 ) : ViewModel() {
+
+    private val analyzer = RecordingAnalyzer(repository, classifier)
 
     enum class Phase { LOADING, ANALYZING, READY, ERROR }
 
@@ -61,10 +61,10 @@ class ResultViewModel(
                 return@launch
             }
             _recording.value = rec
-            // Analysed before segmentations (2026-10-23) or murmur results (2026-10-31)
-            // were stored: analyse again so there is something to show.
-            if (rec.isAnalyzed && rec.segmentation != null && rec.murmurOutcome != null) {
-                _plot.value = withContext(Dispatchers.Default) { plotFor(rec) }
+            // Analysed before segmentations (2026-10-23) or murmur results (2026-10-31, and
+            // again for the 2026-11-03 model) were stored: analyse again.
+            if (analyzer.isComplete(rec)) {
+                _plot.value = withContext(Dispatchers.Default) { analyzer.plotFor(rec) }
                 _phase.value = Phase.READY
             } else {
                 analyze(rec)
@@ -81,44 +81,9 @@ class ResultViewModel(
         _error.value = null
         viewModelScope.launch {
             try {
-                // Hand the classifier the raw capture exactly as recorded: capture rate
-                // (normally 16 kHz), no resampling, no filtering, no DC removal, no
-                // normalization. Anything the algorithm needs done to the signal —
-                // including decimating to the rate its model was trained at — is the
-                // algorithm's job (moved there 2026-09-25), so replacing the algorithm
-                // cannot leave a stale preprocessing step behind in the app.
-                val result = withContext(Dispatchers.IO) {
-                    val raw = repository.decryptToCache(rec)
-                    try {
-                        val samples = readPcm16(raw)
-                        classifier.classify(
-                            HeartSignal(
-                                samples = samples,
-                                audioFile = raw,
-                                sampleRate = rec.sampleRate,
-                                durationMs = samples.size * 1000L / rec.sampleRate,
-                            )
-                        )
-                    } finally {
-                        runCatching { raw.delete() }
-                    }
-                }
-                val updated = rec.copy(
-                    signalQuality = result.quality,
-                    rhythm = result.rhythm,
-                    heartRateBpm = result.heartRateBpm,
-                    beatCount = result.beatCount,
-                    signalConfidence = result.confidence,
-                    bpmVariability = result.bpmVariability,
-                    segmentation = result.segmentation,
-                    murmurOutcome = result.murmur?.outcome,
-                    murmurScore = result.murmur?.score,
-                    murmurDriver = result.murmur?.driver,
-                    analyzedAt = System.currentTimeMillis(),
-                )
-                repository.update(updated)
+                val updated = withContext(Dispatchers.IO) { analyzer.analyze(rec) }
                 _recording.value = updated
-                _plot.value = withContext(Dispatchers.Default) { plotFor(updated) }
+                _plot.value = withContext(Dispatchers.Default) { analyzer.plotFor(updated) }
                 _phase.value = Phase.READY
             } catch (t: Throwable) {
                 _error.value = t.message ?: "Analysis failed"
@@ -126,18 +91,6 @@ class ResultViewModel(
             }
         }
     }
-
-    /**
-     * Re-derives the segmenter's input from the stored capture — cheap, no network — so
-     * the plot is always of the same recording the stored phases came from. Null on any
-     * failure: a missing plot should not cost the clinician the rest of the screen.
-     */
-    private fun plotFor(rec: Recording): SegmentedSignal? = runCatching {
-        val states = rec.segmentation ?: return null
-        val raw = pcgFor(rec) ?: return null
-        val pre = HeartSoundSegmenter.preprocess(raw, rec.sampleRate)
-        SegmentedSignal(pre.normalised, HeartSoundSegmenter.TARGET_FS, states)
-    }.getOrNull()
 
     fun exportReport(destination: Uri, onResult: (Boolean) -> Unit) =
         runExport(onResult) { rec ->
@@ -148,31 +101,7 @@ class ResultViewModel(
             ReportExporter.copyToUri(appContext, pdf, destination)
         }
 
-    /**
-     * The exact signal the classifier was handed — the raw capture — for the report's trace.
-     *
-     * Regenerated from the stored capture rather than cached at analysis time, so the
-     * picture on the report can never be of a different recording than the finding
-     * printed above it.
-     *
-     * Returns null on failure rather than throwing: a report without a trace is still a
-     * useful report, and losing the whole export because the waveform could not be drawn
-     * would be a poor trade.
-     */
-    private fun pcgFor(rec: Recording): ShortArray? = runCatching {
-        val raw = repository.decryptToCache(rec)
-        try {
-            readPcm16(raw)
-        } finally {
-            runCatching { raw.delete() }
-        }
-    }.getOrNull()
-
-    /** 16-bit PCM out of a stored capture. Exact: the doubles were int16 to begin with. */
-    private fun readPcm16(wav: File): ShortArray {
-        val x = PcgPreprocessor.readPcm16AsDoubles(wav)
-        return ShortArray(x.size) { x[it].toInt().toShort() }
-    }
+    private fun pcgFor(rec: Recording): ShortArray? = analyzer.rawPcm(rec)
 
     fun exportAudio(destination: Uri, onResult: (Boolean) -> Unit) =
         runExport(onResult) { rec ->

@@ -179,6 +179,33 @@ What `compare_pcg.py` does **not** do is run the classifier. That lives in Kotli
 against that exact feature extractor; a second Python implementation would be a new
 model, not a check on this one.
 
+## Sort a test session's recordings (`organize_export.py`)
+
+For a test day with many conditions and replicates.
+
+1. **Name every recording `<conditions> r<N>`** in the app's name field, replicate
+   last: `mitral bell r1`, `aortic diaphragm gain 1.5 r3`. Case and spacing do not
+   matter (`Mitral  Bell R2` lands with `mitral bell`).
+2. **On the phone:** Library → **Export all** → pick or create a folder (Download is
+   fine). The app analyses anything not yet analysed (~15 s a minute of audio), then
+   writes `FullerScope_export_<date>_<time>/`: one WAV + PDF per recording and
+   `recordings.csv` with the name exactly as typed plus every analysis result.
+3. **On the PC**, phone plugged in with USB debugging on:
+
+   ```
+   python tools/organize_export.py
+   ```
+
+   It pulls the newest export to `captures/exports/` (gitignored) and writes
+   `sorted_<date>_<time>/<condition>/r<N>/…`, `all_recordings.csv` and
+   `summary.csv`, and prints each condition's replicates with **MISSING** /
+   **DUPLICATE** flags. Names without a trailing `r<N>` go to `_unsorted/` and are
+   listed — never guessed at. Without USB, copy the export folder over and pass its
+   path: `python tools/organize_export.py <folder>`.
+
+Conditions are read from `recordings.csv`, not from filenames: the app's filename
+cleanup drops `.` (so "gain 1.5" would become "Gain-15").
+
 ## Why the DSP is duplicated here
 
 `pcgkit.py` is a deliberate port of four Kotlin files:

@@ -1,7 +1,9 @@
 package com.capstone.stethoscope.di
 
 import android.content.Context
+import com.capstone.stethoscope.analysis.RecordingAnalyzer
 import com.capstone.stethoscope.analysis.murmur.MurmurModel
+import com.capstone.stethoscope.export.BulkExporter
 import com.capstone.stethoscope.analysis.HeartbeatClassifier
 import com.capstone.stethoscope.analysis.MockHeartbeatClassifier
 import com.capstone.stethoscope.analysis.segmenter.HeartSoundSegmenter
@@ -90,4 +92,11 @@ class AppContainer(context: Context) {
         modelSource = { appContext.assets.open("segmenter/model.json") },
         murmurSource = { appContext.assets.open("murmur/model.json") },
     )
+
+    /** Shared by the Analysis screen and the bulk export so both analyse identically. */
+    val analyzer: RecordingAnalyzer by lazy { RecordingAnalyzer(repository, classifier) }
+
+    val bulkExporter: BulkExporter by lazy {
+        BulkExporter(appContext, repository, analyzer, runCatching { murmurModel }.getOrNull())
+    }
 }

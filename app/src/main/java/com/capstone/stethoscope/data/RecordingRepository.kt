@@ -37,6 +37,9 @@ class RecordingRepository(
 
     suspend fun getById(id: Long): Recording? = dao.getById(id)?.toDomain()
 
+    /** Every recording, oldest first — the order a test session was recorded in. */
+    suspend fun all(): List<Recording> = dao.getAllOldestFirst().map { it.toDomain() }
+
     /** Most recently created recording, or null when there are none. */
     suspend fun latest(): Recording? = dao.latest()?.toDomain()
 
